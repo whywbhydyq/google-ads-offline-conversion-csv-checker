@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@vercel/analytics": "^1.5.0",
     "luxon": "^3.7.1",
     "next": "^15.4.6",
     "papaparse": "^5.5.3",
