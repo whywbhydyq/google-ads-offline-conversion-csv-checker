@@ -2,12 +2,22 @@
 
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
+import { track } from "@vercel/analytics";
 import { downloadTextFile, exportIssuesCsv, parseCsvFile, parseCsvText } from "@/lib/csv";
 import type { FieldMapping, ParsedCsv, ValidationIssue, ValidationResult } from "@/lib/types";
 import { validateCsv } from "@/lib/validation";
 
 type SeverityFilter = "all" | "critical" | "warning" | "info";
 const DISPLAY_LIMIT = 500;
+
+function bucketCount(count: number) {
+  if (count === 0) return "0";
+  if (count <= 10) return "1-10";
+  if (count <= 100) return "11-100";
+  if (count <= 1000) return "101-1000";
+  if (count <= 10000) return "1001-10000";
+  return "10000+";
+}
 
 function dateTimeFromNow(days: number, includeTimezone = true) {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
@@ -26,6 +36,7 @@ const sampleLoaders = [
   {
     label: "Try valid click ID CSV",
     fileName: "valid-click-id-offline-conversions.csv",
+    staticPath: "/samples/valid-click-id-offline-conversions.csv",
     csv: () => [
       "Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Order ID",
       `EAIaIQobChMIvalidGclid01,Qualified lead,${dateTimeFromNow(-2)},125.50,USD,ORDER-1001`,
@@ -36,6 +47,7 @@ const sampleLoaders = [
   {
     label: "Try invalid enhanced conversions CSV",
     fileName: "invalid-enhanced-conversions-sample.csv",
+    staticPath: "/samples/invalid-enhanced-conversions-sample.csv",
     csv: () => [
       "Email,Phone,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Order ID",
       `bad-email,callme,Qualified lead,${dateTimeFromNow(1, false)},abc,US,ORDER-2001`,
@@ -54,51 +66,92 @@ export function CheckerApp() {
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [error, setError] = useState("");
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>("all");
+  const [fieldFilter, setFieldFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const [isChecking, setIsChecking] = useState(false);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
     setError("");
+    setIsChecking(true);
+    track("file_selected", { size_bucket: bucketCount(file.size) });
     try {
       const parsedCsv = await parseCsvFile(file);
+      const validationResult = validateCsv(parsedCsv);
       setParsed(parsedCsv);
-      setResult(validateCsv(parsedCsv));
+      setResult(validationResult);
+      setSeverityFilter("all");
+      setFieldFilter("all");
+      setQuery("");
+      track("check_completed", {
+        source: "upload",
+        row_count_bucket: bucketCount(parsedCsv.rawRowCount),
+        issue_count_bucket: bucketCount(validationResult.issues.length),
+        risk_status: validationResult.riskStatus,
+      });
     } catch (err) {
       setParsed(null);
       setResult(null);
       setError(err instanceof Error ? err.message : "Something went wrong while parsing this CSV.");
+    } finally {
+      setIsChecking(false);
     }
   }
 
   function loadSample(sample: (typeof sampleLoaders)[number]) {
     setFileName(sample.fileName);
     setError("");
+    setIsChecking(true);
+    track("sample_loaded", { sample: sample.fileName });
     try {
       const parsedCsv = parseCsvText(sample.csv());
+      const validationResult = validateCsv(parsedCsv);
       setParsed(parsedCsv);
-      setResult(validateCsv(parsedCsv));
+      setResult(validationResult);
+      setSeverityFilter("all");
+      setFieldFilter("all");
+      setQuery("");
+      track("check_completed", {
+        source: "sample",
+        row_count_bucket: bucketCount(parsedCsv.rawRowCount),
+        issue_count_bucket: bucketCount(validationResult.issues.length),
+        risk_status: validationResult.riskStatus,
+      });
     } catch (err) {
       setParsed(null);
       setResult(null);
       setError(err instanceof Error ? err.message : "Could not load the sample CSV.");
+    } finally {
+      setIsChecking(false);
     }
   }
+
+  const fieldOptions = useMemo(() => {
+    if (!result) return [];
+    return Array.from(new Set(result.issues.map((issue) => issue.field).filter(Boolean) as string[])).sort();
+  }, [result]);
 
   const filteredIssues = useMemo(() => {
     if (!result) return [];
     return result.issues.filter((issue) => {
       const matchesSeverity = severityFilter === "all" || issue.severity === severityFilter;
+      const matchesField = fieldFilter === "all" || issue.field === fieldFilter;
       const text = [issue.id, issue.severity, issue.rowNumber, issue.field, issue.message, issue.suggestion, issue.currentValue].join(" ").toLowerCase();
-      return matchesSeverity && text.includes(query.toLowerCase());
+      return matchesSeverity && matchesField && text.includes(query.toLowerCase());
     });
-  }, [query, result, severityFilter]);
+  }, [fieldFilter, query, result, severityFilter]);
 
   const visibleIssues = filteredIssues.slice(0, DISPLAY_LIMIT);
 
   function downloadReport() {
     if (!result) return;
+    track("report_downloaded", {
+      row_count_bucket: bucketCount(parsed?.rawRowCount ?? 0),
+      issue_count_bucket: bucketCount(result.issues.length),
+      risk_status: result.riskStatus,
+    });
     downloadTextFile("google-ads-offline-conversion-check-report.csv", exportIssuesCsv(result.issues), "text/csv;charset=utf-8");
   }
 
@@ -120,6 +173,11 @@ export function CheckerApp() {
               <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" />
             </label>
             <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
+            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-700">Download sample CSV files</p>
+              <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <a key={sample.staticPath} href={sample.staticPath} download onClick={() => track("sample_downloaded", { sample: sample.fileName })} className="text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</a>)}</div>
+            </div>
+            {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules.</div>}
             {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
             {parsed && result && <FileSnapshot fileName={fileName} parsed={parsed} mapping={result.mapping} />}
           </div>
@@ -129,8 +187,12 @@ export function CheckerApp() {
             <ResultsSummary parsed={parsed} result={result} />
             <FieldMappingPanel mapping={result.mapping} headers={parsed.headers} />
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h2 className="text-2xl font-bold text-slate-950">Detected issues</h2><p className="mt-1 text-sm text-slate-600">Filter by severity, search issue text, then download the full issue report.</p></div><button onClick={downloadReport} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Download full report CSV</button></div>
-              <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center"><div className="flex flex-wrap gap-2">{(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => <button key={severity} onClick={() => setSeverityFilter(severity)} className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${severityFilter === severity ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{severity}</button>)}</div><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search row, field, rule, or message…" className="min-w-0 flex-1 rounded-full border border-slate-200 px-4 py-2 text-sm outline-none ring-blue-500 focus:ring-2" /></div>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h2 className="text-2xl font-bold text-slate-950">Detected issues</h2><p className="mt-1 text-sm text-slate-600">Filter by severity or field, search issue text, then download the full issue report.</p></div><button onClick={downloadReport} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Download full report CSV</button></div>
+              <div className="mt-6 grid gap-3 lg:grid-cols-[auto_220px_1fr] lg:items-center">
+                <div className="flex flex-wrap gap-2">{(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => <button key={severity} onClick={() => setSeverityFilter(severity)} className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${severityFilter === severity ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{severity}</button>)}</div>
+                <select value={fieldFilter} onChange={(event) => setFieldFilter(event.target.value)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-blue-500 focus:ring-2"><option value="all">All fields</option>{fieldOptions.map((field) => <option key={field} value={field}>{field}</option>)}</select>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search row, field, rule, or message…" className="min-w-0 rounded-full border border-slate-200 px-4 py-2 text-sm outline-none ring-blue-500 focus:ring-2" />
+              </div>
               {filteredIssues.length > DISPLAY_LIMIT && <p className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-800">Showing the first {DISPLAY_LIMIT.toLocaleString()} matching issues for browser performance. The downloaded report includes all {result.issues.length.toLocaleString()} detected issues.</p>}
               <IssuesTable issues={visibleIssues} />
             </div>
