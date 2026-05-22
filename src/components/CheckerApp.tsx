@@ -128,6 +128,11 @@ export function CheckerApp() {
     }
   }
 
+  function downloadSample(sample: (typeof sampleLoaders)[number]) {
+    track("sample_downloaded", { sample: sample.fileName, source: "dynamic" });
+    downloadTextFile(sample.fileName, sample.csv(), "text/csv;charset=utf-8");
+  }
+
   const fieldOptions = useMemo(() => {
     if (!result) return [];
     return Array.from(new Set(result.issues.map((issue) => issue.field).filter(Boolean) as string[])).sort();
@@ -174,8 +179,9 @@ export function CheckerApp() {
             </label>
             <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
             <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-700">Download sample CSV files</p>
-              <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <a key={sample.staticPath} href={sample.staticPath} download onClick={() => track("sample_downloaded", { sample: sample.fileName })} className="text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</a>)}</div>
+              <p className="text-sm font-semibold text-slate-700">Download fresh sample CSV files</p>
+              <p className="mt-1 text-xs text-slate-500">These downloads are generated with relative dates so the examples stay useful over time.</p>
+              <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.staticPath} onClick={() => downloadSample(sample)} className="text-left text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</button>)}</div>
             </div>
             {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules.</div>}
             {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
