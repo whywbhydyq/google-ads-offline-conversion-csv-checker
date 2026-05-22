@@ -2,7 +2,20 @@
 
 A browser-local preflight checker for Google Ads offline conversion CSV files.
 
-The MVP lets PPC operators, agencies, and local service advertisers choose a CSV file in the browser and detect common upload risks before importing offline conversions into Google Ads.
+The tool helps PPC operators, agencies, and local service advertisers choose a CSV file in the browser and detect common upload risks before importing offline conversions into Google Ads.
+
+## Live app pages
+
+- `/` - CSV checker
+- `/faq` - FAQ and product boundary
+- `/about` - project scope and privacy-first positioning
+- `/privacy` - privacy policy
+- `/terms` - terms of use
+- `/contact` - feedback and bug report guidance
+- `/guide` - guide index
+- `/guide/google-ads-offline-conversion-upload-errors` - upload error guide
+- `/guide/offline-conversion-csv-template-checklist` - CSV template checklist
+- `/guide/enhanced-conversions-for-leads-csv-errors` - enhanced conversions CSV guide
 
 ## What it checks
 
@@ -38,19 +51,45 @@ Tracked events include:
 
 ## Sample files
 
-Static CSV files are available in `public/samples` for download:
+Static CSV files are available in `public/samples` for direct download:
 
 - `valid-click-id-offline-conversions.csv`
 - `invalid-enhanced-conversions-sample.csv`
 
-The homepage also generates fresh relative-date sample data at runtime so the interactive demo does not become stale months later.
+The homepage also generates fresh relative-date sample data at runtime so the interactive demo and downloadable fresh samples do not become stale months later.
 
-## Important implementation notes
+## Architecture notes
 
+- CSV parsing uses Papa Parse.
+- Validation rules are split under `src/lib/validation/`:
+  - `fieldDetection.ts`
+  - `structureRules.ts`
+  - `requiredFieldRules.ts`
+  - `timeRules.ts`
+  - `identifierRules.ts`
+  - `userDataRules.ts`
+  - `valueRules.ts`
+  - `duplicateRules.ts`
+  - `rowRules.ts`
+  - `helpers.ts`
+  - `constants.ts`
+- `src/lib/validation.ts` remains the public validation entry point.
+- Uploaded CSV checks use a browser Web Worker when possible, with a main-thread fallback.
 - The issue table displays the first 500 matching issues for browser performance; the downloaded CSV report includes all detected issues.
 - Report CSV cells are escaped to reduce formula injection risk when opened in spreadsheet apps.
-- A lightweight checking state appears while the browser parses and validates a CSV.
 - Issue filtering supports severity, field, and free-text search.
+
+## Testing and CI
+
+Vitest covers CSV parsing, report escaping, field detection, and core validation rules.
+
+```bash
+npm run typecheck
+npm run test
+npm run build
+```
+
+GitHub Actions runs install, typecheck, tests, and build on pushes and pull requests to `main`.
 
 ## Tech stack
 
@@ -61,6 +100,7 @@ The homepage also generates fresh relative-date sample data at runtime so the in
 - Papa Parse
 - Luxon
 - Vercel Analytics
+- Vitest
 - Vercel-ready frontend app
 
 ## Getting started
@@ -76,11 +116,12 @@ Open http://localhost:3000.
 
 ```bash
 npm run typecheck
+npm run test
 npm run build
 ```
 
 ## MVP scope
 
-Included: CSV upload, local parsing, field auto-detection, rule-based validation, results summary, issue table, report download, static sample files, FAQ, SEO guide page, and anonymous usage events.
+Included: CSV upload, local parsing, field auto-detection, split rule-based validation, results summary, issue table, report download, static and dynamic sample files, Web Worker validation, FAQ, trust pages, SEO guide pages, sitemap, anonymous usage events, and CI tests.
 
 Not included in v1: Google Ads API, OAuth login, user accounts, server-side CSV storage, CRM sync, Google Sheets sync, complex spreadsheet editing, or automatic hash/export fix workflow.
