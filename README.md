@@ -24,11 +24,33 @@ CSV files are processed locally in the browser. The app does not upload CSV file
 
 This tool checks CSV-level issues only. It cannot verify Google Ads account-level settings, conversion action ownership, click ownership, MCC permissions, or final attribution.
 
+## Anonymous analytics
+
+Vercel Analytics is used for high-level product events only. Events use buckets and status labels, not CSV row content, file names, raw values, email addresses, phone numbers, click IDs, or conversion data.
+
+Tracked events include:
+
+- `file_selected`
+- `sample_loaded`
+- `sample_downloaded`
+- `check_completed`
+- `report_downloaded`
+
+## Sample files
+
+Static CSV files are available in `public/samples` for download:
+
+- `valid-click-id-offline-conversions.csv`
+- `invalid-enhanced-conversions-sample.csv`
+
+The homepage also generates fresh relative-date sample data at runtime so the interactive demo does not become stale months later.
+
 ## Important implementation notes
 
-- The homepage sample buttons generate fresh relative dates at runtime so the demo does not become stale months later.
 - The issue table displays the first 500 matching issues for browser performance; the downloaded CSV report includes all detected issues.
 - Report CSV cells are escaped to reduce formula injection risk when opened in spreadsheet apps.
+- A lightweight checking state appears while the browser parses and validates a CSV.
+- Issue filtering supports severity, field, and free-text search.
 
 ## Tech stack
 
@@ -38,6 +60,7 @@ This tool checks CSV-level issues only. It cannot verify Google Ads account-leve
 - Tailwind CSS
 - Papa Parse
 - Luxon
+- Vercel Analytics
 - Vercel-ready frontend app
 
 ## Getting started
@@ -58,6 +81,6 @@ npm run build
 
 ## MVP scope
 
-Included: CSV upload, local parsing, field auto-detection, rule-based validation, results summary, issue table, report download, FAQ, and SEO guide page.
+Included: CSV upload, local parsing, field auto-detection, rule-based validation, results summary, issue table, report download, static sample files, FAQ, SEO guide page, and anonymous usage events.
 
 Not included in v1: Google Ads API, OAuth login, user accounts, server-side CSV storage, CRM sync, Google Sheets sync, complex spreadsheet editing, or automatic hash/export fix workflow.
