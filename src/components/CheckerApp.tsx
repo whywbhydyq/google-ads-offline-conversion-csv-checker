@@ -3,12 +3,18 @@
 import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { track } from "@vercel/analytics";
-import { downloadTextFile, exportIssuesCsv, parseCsvFile, parseCsvText } from "@/lib/csv";
+import { downloadTextFile, exportIssuesCsv, parseCsvText } from "@/lib/csv";
 import type { FieldMapping, ParsedCsv, ValidationIssue, ValidationResult } from "@/lib/types";
 import { validateCsv } from "@/lib/validation";
 
 type SeverityFilter = "all" | "critical" | "warning" | "info";
+type ValidationSource = "worker" | "main_thread";
+type WorkerResponse =
+  | { id: string; ok: true; parsed: ParsedCsv; result: ValidationResult }
+  | { id: string; ok: false; error: string };
+
 const DISPLAY_LIMIT = 500;
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 function bucketCount(count: number) {
   if (count === 0) return "0";
@@ -30,6 +36,57 @@ function dateOnlyFromNow(days: number) {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   const pad = (value: number) => value.toString().padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function validateCsvText(text: string): { parsed: ParsedCsv; result: ValidationResult; source: ValidationSource } {
+  const parsed = parseCsvText(text);
+  return { parsed, result: validateCsv(parsed), source: "main_thread" };
+}
+
+function validateCsvTextInWorker(text: string): Promise<{ parsed: ParsedCsv; result: ValidationResult; source: ValidationSource }> {
+  if (typeof Worker === "undefined") return Promise.resolve(validateCsvText(text));
+
+  return new Promise((resolve, reject) => {
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const worker = new Worker(new URL("../workers/csvValidation.worker.ts", import.meta.url), { type: "module" });
+    const timer = window.setTimeout(() => {
+      worker.terminate();
+      reject(new Error("CSV worker timed out."));
+    }, 60_000);
+
+    function cleanup() {
+      window.clearTimeout(timer);
+      worker.terminate();
+    }
+
+    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      const message = event.data;
+      if (message.id !== id) return;
+      cleanup();
+      if (message.ok) resolve({ parsed: message.parsed, result: message.result, source: "worker" });
+      else reject(new Error(message.error));
+    };
+
+    worker.onerror = () => {
+      cleanup();
+      reject(new Error("CSV worker failed."));
+    };
+
+    worker.postMessage({ id, text });
+  });
+}
+
+async function validateUploadedFile(file: File) {
+  if (!file.name.toLowerCase().endsWith(".csv")) throw new Error("Please upload a CSV file.");
+  if (file.size === 0) throw new Error("This file appears to be empty.");
+  if (file.size > MAX_FILE_SIZE_BYTES) throw new Error("This file is too large for the browser checker. Try a smaller file.");
+
+  const text = await file.text();
+  try {
+    return await validateCsvTextInWorker(text);
+  } catch {
+    return validateCsvText(text);
+  }
 }
 
 const sampleLoaders = [
@@ -78,8 +135,7 @@ export function CheckerApp() {
     setIsChecking(true);
     track("file_selected", { size_bucket: bucketCount(file.size) });
     try {
-      const parsedCsv = await parseCsvFile(file);
-      const validationResult = validateCsv(parsedCsv);
+      const { parsed: parsedCsv, result: validationResult, source } = await validateUploadedFile(file);
       setParsed(parsedCsv);
       setResult(validationResult);
       setSeverityFilter("all");
@@ -87,6 +143,7 @@ export function CheckerApp() {
       setQuery("");
       track("check_completed", {
         source: "upload",
+        processing_mode: source,
         row_count_bucket: bucketCount(parsedCsv.rawRowCount),
         issue_count_bucket: bucketCount(validationResult.issues.length),
         risk_status: validationResult.riskStatus,
@@ -115,6 +172,7 @@ export function CheckerApp() {
       setQuery("");
       track("check_completed", {
         source: "sample",
+        processing_mode: "main_thread",
         row_count_bucket: bucketCount(parsedCsv.rawRowCount),
         issue_count_bucket: bucketCount(validationResult.issues.length),
         risk_status: validationResult.riskStatus,
@@ -174,7 +232,7 @@ export function CheckerApp() {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
             <label htmlFor="csv-upload" className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition hover:border-blue-400 hover:bg-blue-50">
               <span className="text-lg font-semibold text-slate-950">Choose CSV File</span>
-              <span className="mt-2 text-sm text-slate-600">CSV only · up to 10MB · processed in your browser</span>
+              <span className="mt-2 text-sm text-slate-600">CSV only · up to 10MB · processed in a browser worker when possible</span>
               <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" />
             </label>
             <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
@@ -183,7 +241,7 @@ export function CheckerApp() {
               <p className="mt-1 text-xs text-slate-500">These downloads are generated with relative dates so the examples stay useful over time.</p>
               <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.staticPath} onClick={() => downloadSample(sample)} className="text-left text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</button>)}</div>
             </div>
-            {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules.</div>}
+            {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules in a browser worker when possible.</div>}
             {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
             {parsed && result && <FileSnapshot fileName={fileName} parsed={parsed} mapping={result.mapping} />}
           </div>
@@ -205,7 +263,7 @@ export function CheckerApp() {
           </section>
         )}
         <section className="mt-14 grid gap-4 md:grid-cols-3">{["Missing headers and duplicated columns", "Invalid, future, date-only, or old conversion times", "Plain-text email, suspicious phone, and SHA-256 hash issues", "Empty click ID or user identifiers", "Invalid value and currency formatting", "Duplicate conversion and Order ID risks"].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">{item}</div>)}</section>
-        <footer className="mt-14 flex flex-col gap-3 border-t border-slate-200 py-8 text-sm text-slate-600 md:flex-row md:items-center md:justify-between"><p>Built for quick CSV preflight checks before Google Ads upload.</p><div className="flex gap-4"><a href="/faq" className="font-medium text-blue-700 hover:text-blue-900">FAQ</a><a href="/guide/google-ads-offline-conversion-upload-errors" className="font-medium text-blue-700 hover:text-blue-900">Upload error guide</a></div></footer>
+        <footer className="mt-14 flex flex-col gap-3 border-t border-slate-200 py-8 text-sm text-slate-600 md:flex-row md:items-center md:justify-between"><p>Built for quick CSV preflight checks before Google Ads upload.</p><div className="flex flex-wrap gap-4"><a href="/faq" className="font-medium text-blue-700 hover:text-blue-900">FAQ</a><a href="/guide" className="font-medium text-blue-700 hover:text-blue-900">Guides</a><a href="/privacy" className="font-medium text-blue-700 hover:text-blue-900">Privacy</a><a href="/contact" className="font-medium text-blue-700 hover:text-blue-900">Contact</a></div></footer>
       </section>
     </main>
   );
