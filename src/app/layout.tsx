@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://google-ads-offline-conversion-csv-checker.vercel.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ads-csv.ymirtool.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
