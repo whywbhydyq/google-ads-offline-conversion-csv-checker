@@ -1,10 +1,10 @@
-import type { FieldKey, FieldMapping, ValidationIssue, ParsedCsv } from "../types";
-import { clickIdFields, identifierFields } from "./constants";
-import { get, firstValue, issue } from "./helpers";
+import type { FieldMapping, ValidationIssue } from "../types";
+import { addressFields, clickIdFields, identifierFields } from "./constants";
+import { get, issue } from "./helpers";
 
 export function checkIdentifiers(row: Record<string, string>, mapping: FieldMapping, rowNumber: number, issues: ValidationIssue[]) {
   const hasIdValue = identifierFields.some((field) => Boolean(get(row, mapping[field])));
-  const hasAddressValue = ["first_name", "last_name", "street_address", "city", "state", "country", "zip"].some((field) => Boolean(get(row, mapping[field])));
+  const hasAddressValue = addressFields.some((field) => Boolean(get(row, mapping[field])));
 
   if (!hasIdValue && !hasAddressValue) {
     issues.push(issue("EMPTY_CLICK_ID", "critical", "No identifier value was found in this row.", "Add GCLID, GBRAID, WBRAID, Email, Phone, or user-provided address data.", { rowNumber }));
