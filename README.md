@@ -125,3 +125,5 @@ npm run build
 Included: CSV upload, local parsing, field auto-detection, split rule-based validation, results summary, issue table, report download, static and dynamic sample files, Web Worker validation, FAQ, trust pages, SEO guide pages, sitemap, anonymous usage events, and CI tests.
 
 Not included in v1: Google Ads API, OAuth login, user accounts, server-side CSV storage, CRM sync, Google Sheets sync, complex spreadsheet editing, or automatic hash/export fix workflow.
+
+<!-- deployment retry: 2026-05-22 -->
