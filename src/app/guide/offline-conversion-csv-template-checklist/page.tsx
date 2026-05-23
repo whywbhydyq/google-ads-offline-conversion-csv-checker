@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
+import { siteName, siteUrl } from "@/lib/site";
+
+const pageTitle = "Offline Conversion CSV Template Checklist";
+const pageDescription = "A practical checklist for Google Ads offline conversion CSV columns, identifiers, dates, values, and currencies before upload.";
+const pagePath = "/guide/offline-conversion-csv-template-checklist";
 
 export const metadata: Metadata = {
-  title: "Offline Conversion CSV Template Checklist",
-  description: "A practical checklist for Google Ads offline conversion CSV columns, identifiers, dates, values, and currencies before upload.",
+  title: pageTitle,
+  description: pageDescription,
+  alternates: {
+    canonical: pagePath,
+  },
 };
 
 const items = [
@@ -14,11 +23,33 @@ const items = [
   ["Duplicates", "Check repeated identifier + conversion name + conversion time combinations before importing."],
 ];
 
+const checklistJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: pageTitle,
+    description: pageDescription,
+    mainEntityOfPage: `${siteUrl}${pagePath}`,
+    author: { "@type": "Organization", name: siteName, url: siteUrl },
+    publisher: { "@type": "Organization", name: siteName, url: siteUrl },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Guides", item: `${siteUrl}/guide` },
+      { "@type": "ListItem", position: 3, name: pageTitle, item: `${siteUrl}${pagePath}` },
+    ],
+  },
+];
+
 export default function TemplateChecklistPage() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
+      <JsonLd data={checklistJsonLd} />
       <a href="/guide" className="text-sm font-semibold text-blue-700 hover:text-blue-900">Back to guides</a>
-      <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">Offline Conversion CSV Template Checklist</h1>
+      <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
       <p className="mt-5 text-lg leading-8 text-slate-700">Use this checklist before uploading an offline conversion CSV to Google Ads.</p>
       <div className="mt-10 space-y-5">
         {items.map(([title, body]) => (
