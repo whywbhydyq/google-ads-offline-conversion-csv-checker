@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://google-ads-offline-conversion-csv-checker.vercel.app";
+import { siteUrl } from "@/lib/site";
 
 const routes = [
   { path: "", changeFrequency: "weekly" as const, priority: 1 },
@@ -19,7 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
   return routes.map((route) => ({
-    url: `${baseUrl}${route.path}`,
+    url: `${siteUrl}${route.path}`,
     lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
