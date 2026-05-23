@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
+import { siteName, siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "FAQ",
   description: "Frequently asked questions about the browser-local Google Ads Offline Conversion CSV Checker.",
+  alternates: {
+    canonical: "/faq",
+  },
 };
 
 const faqs = [
@@ -28,9 +33,50 @@ const faqs = [
   },
 ];
 
+const faqJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "FAQ",
+        item: `${siteUrl}/faq`,
+      },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: `FAQ | ${siteName}`,
+    description: metadata.description,
+    url: `${siteUrl}/faq`,
+  },
+];
+
 export default function FaqPage() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
+      <JsonLd data={faqJsonLd} />
       <a href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">← Back to checker</a>
       <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950">FAQ</h1>
       <p className="mt-4 text-lg leading-8 text-slate-700">
