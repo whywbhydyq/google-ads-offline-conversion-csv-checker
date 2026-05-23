@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://google-ads-offline-conversion-csv-checker.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ads-csv.ymirtool.com";
 
 export default function robots(): MetadataRoute.Robots {
   return {
