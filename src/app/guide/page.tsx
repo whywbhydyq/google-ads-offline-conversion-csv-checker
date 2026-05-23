@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
+import { siteName, siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "CSV Guides",
   description: "Guides for checking offline conversion CSV files before upload.",
+  alternates: {
+    canonical: "/guide",
+  },
 };
 
 const guides = [
@@ -11,9 +16,50 @@ const guides = [
   ["Enhanced conversions CSV errors", "/guide/enhanced-conversions-for-leads-csv-errors", "Check email, phone, hash, and user data issues."],
 ];
 
+const guideJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `Offline Conversion CSV Guides | ${siteName}`,
+    description: metadata.description,
+    url: `${siteUrl}/guide`,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Offline Conversion CSV Guides",
+    itemListElement: guides.map(([title, href, description], index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${siteUrl}${href}`,
+      name: title,
+      description,
+    })),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Guides",
+        item: `${siteUrl}/guide`,
+      },
+    ],
+  },
+];
+
 export default function GuideIndexPage() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
+      <JsonLd data={guideJsonLd} />
       <a href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">Back to checker</a>
       <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">Offline Conversion CSV Guides</h1>
       <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Practical guides for preparing and troubleshooting CSV files before import.</p>
