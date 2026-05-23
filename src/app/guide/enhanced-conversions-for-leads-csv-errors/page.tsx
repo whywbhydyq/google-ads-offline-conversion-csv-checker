@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/components/JsonLd";
+import { siteName, siteUrl } from "@/lib/site";
+
+const pageTitle = "Enhanced Conversions for Leads CSV Errors";
+const pageDescription = "Fix common enhanced conversions for leads CSV issues, including plain-text email, phone format, SHA-256 hash length, and missing user data.";
+const pagePath = "/guide/enhanced-conversions-for-leads-csv-errors";
 
 export const metadata: Metadata = {
-  title: "Enhanced Conversions for Leads CSV Errors",
-  description: "Fix common enhanced conversions for leads CSV issues, including plain-text email, phone format, SHA-256 hash length, and missing user data.",
+  title: pageTitle,
+  description: pageDescription,
+  alternates: {
+    canonical: pagePath,
+  },
 };
 
 const sections = [
@@ -28,11 +37,33 @@ const sections = [
   },
 ];
 
+const guideJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: pageTitle,
+    description: pageDescription,
+    mainEntityOfPage: `${siteUrl}${pagePath}`,
+    author: { "@type": "Organization", name: siteName, url: siteUrl },
+    publisher: { "@type": "Organization", name: siteName, url: siteUrl },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Guides", item: `${siteUrl}/guide` },
+      { "@type": "ListItem", position: 3, name: pageTitle, item: `${siteUrl}${pagePath}` },
+    ],
+  },
+];
+
 export default function EnhancedConversionsGuidePage() {
   return (
     <main className="mx-auto max-w-4xl px-6 py-12">
+      <JsonLd data={guideJsonLd} />
       <a href="/guide" className="text-sm font-semibold text-blue-700 hover:text-blue-900">Back to guides</a>
-      <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">Enhanced Conversions for Leads CSV Errors</h1>
+      <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
       <p className="mt-5 text-lg leading-8 text-slate-700">Use this guide to review user-provided data problems before importing enhanced conversions for leads.</p>
       <div className="mt-10 space-y-5">
         {sections.map((section) => (
