@@ -4,6 +4,10 @@ A browser-local preflight checker for Google Ads offline conversion CSV files.
 
 The tool helps PPC operators, agencies, and local service advertisers choose a CSV file in the browser and detect common upload risks before importing offline conversions into Google Ads.
 
+## Production domain / site URL
+
+Set `NEXT_PUBLIC_SITE_URL` to your production domain, e.g., https://ads-csv.ymirtool.com. All canonical, sitemap, and robots URLs are unified to this host.
+
 ## Live app pages
 
 - `/` - CSV checker
