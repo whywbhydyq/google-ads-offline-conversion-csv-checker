@@ -1,4 +1,6 @@
 import { CheckerApp } from "@/components/CheckerApp";
+import { JsonLd } from "@/components/JsonLd";
+import { defaultDescription, defaultTitle, siteName, siteUrl } from "@/lib/site";
 
 const supportedColumns = [
   "Google Click ID, GBRAID, and WBRAID",
@@ -53,9 +55,66 @@ const faqPreview = [
   },
 ];
 
+const homepageJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: siteName,
+    url: siteUrl,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Any modern web browser",
+    browserRequirements: "Requires JavaScript and local browser file access for CSV parsing.",
+    description: defaultDescription,
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    featureList: detectedChecks,
+    isAccessibleForFree: true,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqPreview.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: defaultTitle,
+    description: defaultDescription,
+    url: siteUrl,
+    mainEntity: {
+      "@type": "WebApplication",
+      name: siteName,
+      url: siteUrl,
+    },
+  },
+];
+
 export default function Home() {
   return (
     <main className="min-h-screen">
+      <JsonLd data={homepageJsonLd} />
       <CheckerApp />
       <StaticSeoContent />
       <footer className="mx-auto flex max-w-7xl flex-col gap-3 border-t border-slate-200 px-6 py-8 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
