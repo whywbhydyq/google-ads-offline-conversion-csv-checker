@@ -219,53 +219,52 @@ export function CheckerApp() {
   }
 
   return (
-    <main className="min-h-screen">
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:py-16">
-        <div className="grid gap-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-center">
-          <div>
-            <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Free local preflight checker</p>
-            <h1 className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Check your offline conversion CSV before uploading it to Google Ads. Detect missing headers, invalid times, old GCLIDs, un-hashed user data, duplicates, and formatting issues locally in your browser.</p>
-            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"><strong>Privacy:</strong> Your file is processed locally in your browser. It is not uploaded to our server.</div>
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">This tool checks your CSV locally before upload. It cannot verify account-level settings, conversion action ownership, click ownership, or final attribution inside Google Ads.</div>
-          </div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <label htmlFor="csv-upload" className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition hover:border-blue-400 hover:bg-blue-50">
-              <span className="text-lg font-semibold text-slate-950">Choose CSV File</span>
-              <span className="mt-2 text-sm text-slate-600">CSV only · up to 10MB · processed in a browser worker when possible</span>
-              <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" />
-            </label>
-            <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
-            <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-700">Download fresh sample CSV files</p>
-              <p className="mt-1 text-xs text-slate-500">These downloads are generated with relative dates so the examples stay useful over time.</p>
-              <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.staticPath} onClick={() => downloadSample(sample)} className="text-left text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</button>)}</div>
-            </div>
-            {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules in a browser worker when possible.</div>}
-            {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-            {parsed && result && <FileSnapshot fileName={fileName} parsed={parsed} mapping={result.mapping} />}
-          </div>
+    <section className="mx-auto max-w-7xl px-6 py-10 lg:py-16" aria-labelledby="checker-title">
+      <div className="grid gap-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-center">
+        <div>
+          <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Free local preflight checker</p>
+          <h1 id="checker-title" className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to catch common Google Ads offline conversion import risks before you preview or apply the file: missing headers, invalid conversion times, old click IDs, unhashed user data, duplicate rows, and value or currency formatting issues.</p>
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"><strong>Privacy:</strong> Your CSV is parsed locally in this browser. It is not uploaded to our server and row-level conversion data is not stored.</div>
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">This is a CSV-level preflight check only. Google Ads can still reject or ignore rows because of account settings, conversion action ownership, click ownership, customer data terms, or attribution eligibility.</div>
         </div>
-        {parsed && result && (
-          <section className="mt-10 space-y-8">
-            <ResultsSummary parsed={parsed} result={result} />
-            <FieldMappingPanel mapping={result.mapping} headers={parsed.headers} />
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h2 className="text-2xl font-bold text-slate-950">Detected issues</h2><p className="mt-1 text-sm text-slate-600">Filter by severity or field, search issue text, then download the full issue report.</p></div><button onClick={downloadReport} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Download full report CSV</button></div>
-              <div className="mt-6 grid gap-3 lg:grid-cols-[auto_220px_1fr] lg:items-center">
-                <div className="flex flex-wrap gap-2">{(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => <button key={severity} onClick={() => setSeverityFilter(severity)} className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${severityFilter === severity ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{severity}</button>)}</div>
-                <select value={fieldFilter} onChange={(event) => setFieldFilter(event.target.value)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-blue-500 focus:ring-2"><option value="all">All fields</option>{fieldOptions.map((field) => <option key={field} value={field}>{field}</option>)}</select>
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search row, field, rule, or message…" className="min-w-0 rounded-full border border-slate-200 px-4 py-2 text-sm outline-none ring-blue-500 focus:ring-2" />
-              </div>
-              {filteredIssues.length > DISPLAY_LIMIT && <p className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-800">Showing the first {DISPLAY_LIMIT.toLocaleString()} matching issues for browser performance. The downloaded report includes all {result.issues.length.toLocaleString()} detected issues.</p>}
-              <IssuesTable issues={visibleIssues} />
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft" aria-labelledby="upload-title">
+          <h2 id="upload-title" className="sr-only">Upload a CSV for a local preflight check</h2>
+          <label htmlFor="csv-upload" className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition hover:border-blue-400 hover:bg-blue-50">
+            <span className="text-lg font-semibold text-slate-950">Check CSV File Locally</span>
+            <span className="mt-2 text-sm text-slate-600">CSV only · up to 10MB · processed in a browser worker when possible</span>
+            <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" />
+          </label>
+          <p className="mt-3 text-center text-xs text-slate-500">No Google Ads login required. Your file stays in your browser.</p>
+          <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
+          <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-700">Download fresh sample CSV files</p>
+            <p className="mt-1 text-xs text-slate-500">These downloads are generated with relative dates so the examples stay useful over time.</p>
+            <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.staticPath} onClick={() => downloadSample(sample)} className="text-left text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</button>)}</div>
+          </div>
+          {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules in a browser worker when possible.</div>}
+          {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+          {parsed && result && <FileSnapshot fileName={fileName} parsed={parsed} mapping={result.mapping} />}
+        </div>
+      </div>
+      {parsed && result && (
+        <section className="mt-10 space-y-8">
+          <ResultsSummary parsed={parsed} result={result} />
+          <FieldMappingPanel mapping={result.mapping} headers={parsed.headers} />
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h2 className="text-2xl font-bold text-slate-950">Detected issues</h2><p className="mt-1 text-sm text-slate-600">Filter by severity or field, search issue text, then download the full issue report.</p></div><button onClick={downloadReport} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Download full report CSV</button></div>
+            <div className="mt-6 grid gap-3 lg:grid-cols-[auto_220px_1fr] lg:items-center">
+              <div className="flex flex-wrap gap-2">{(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => <button key={severity} onClick={() => setSeverityFilter(severity)} className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${severityFilter === severity ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{severity}</button>)}</div>
+              <select value={fieldFilter} onChange={(event) => setFieldFilter(event.target.value)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-blue-500 focus:ring-2"><option value="all">All fields</option>{fieldOptions.map((field) => <option key={field} value={field}>{field}</option>)}</select>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search row, field, rule, or message…" className="min-w-0 rounded-full border border-slate-200 px-4 py-2 text-sm outline-none ring-blue-500 focus:ring-2" />
             </div>
-          </section>
-        )}
-        <section className="mt-14 grid gap-4 md:grid-cols-3">{["Missing headers and duplicated columns", "Invalid, future, date-only, or old conversion times", "Plain-text email, suspicious phone, and SHA-256 hash issues", "Empty click ID or user identifiers", "Invalid value and currency formatting", "Duplicate conversion and Order ID risks"].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">{item}</div>)}</section>
-        <footer className="mt-14 flex flex-col gap-3 border-t border-slate-200 py-8 text-sm text-slate-600 md:flex-row md:items-center md:justify-between"><p>Built for quick CSV preflight checks before Google Ads upload.</p><div className="flex flex-wrap gap-4"><a href="/faq" className="font-medium text-blue-700 hover:text-blue-900">FAQ</a><a href="/guide" className="font-medium text-blue-700 hover:text-blue-900">Guides</a><a href="/privacy" className="font-medium text-blue-700 hover:text-blue-900">Privacy</a><a href="/contact" className="font-medium text-blue-700 hover:text-blue-900">Contact</a></div></footer>
-      </section>
-    </main>
+            {filteredIssues.length > DISPLAY_LIMIT && <p className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-800">Showing the first {DISPLAY_LIMIT.toLocaleString()} matching issues for browser performance. The downloaded report includes all {result.issues.length.toLocaleString()} detected issues.</p>}
+            <IssuesTable issues={visibleIssues} />
+          </div>
+        </section>
+      )}
+      <section className="mt-14 grid gap-4 md:grid-cols-3" aria-label="Common CSV risks this checker detects">{["Missing headers and duplicated columns", "Invalid, future, date-only, or old conversion times", "Plain-text email, suspicious phone, and SHA-256 hash issues", "Empty click ID or user identifiers", "Invalid value and currency formatting", "Duplicate conversion and Order ID risks"].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">{item}</div>)}</section>
+    </section>
   );
 }
 
