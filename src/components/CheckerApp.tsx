@@ -25,6 +25,31 @@ function bucketCount(count: number) {
   return "10000+";
 }
 
+function bucketTextLength(length: number) {
+  if (length === 0) return "0";
+  if (length <= 3) return "1-3";
+  if (length <= 10) return "4-10";
+  if (length <= 30) return "11-30";
+  return "31+";
+}
+
+function parseFailureReason(message: string) {
+  const lower = message.toLowerCase();
+  if (lower.includes("csv file")) return "not_csv";
+  if (lower.includes("empty")) return "empty_file";
+  if (lower.includes("too large")) return "file_too_large";
+  if (lower.includes("worker")) return "worker_error";
+  return "parse_or_validation_error";
+}
+
+function getIssueCounts(result: ValidationResult) {
+  return {
+    critical: result.issues.filter((issue) => issue.severity === "critical").length,
+    warning: result.issues.filter((issue) => issue.severity === "warning").length,
+    info: result.issues.filter((issue) => issue.severity === "info").length,
+  };
+}
+
 function dateTimeFromNow(days: number, includeTimezone = true) {
   const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   const pad = (value: number) => value.toString().padStart(2, "0");
@@ -141,17 +166,26 @@ export function CheckerApp() {
       setSeverityFilter("all");
       setFieldFilter("all");
       setQuery("");
+      const counts = getIssueCounts(validationResult);
       track("check_completed", {
         source: "upload",
         processing_mode: source,
         row_count_bucket: bucketCount(parsedCsv.rawRowCount),
         issue_count_bucket: bucketCount(validationResult.issues.length),
+        critical_count_bucket: bucketCount(counts.critical),
+        warning_count_bucket: bucketCount(counts.warning),
         risk_status: validationResult.riskStatus,
       });
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong while parsing this CSV.";
       setParsed(null);
       setResult(null);
-      setError(err instanceof Error ? err.message : "Something went wrong while parsing this CSV.");
+      setError(message);
+      track("parse_failed", {
+        source: "upload",
+        reason: parseFailureReason(message),
+        size_bucket: bucketCount(file.size),
+      });
     } finally {
       setIsChecking(false);
     }
@@ -170,17 +204,26 @@ export function CheckerApp() {
       setSeverityFilter("all");
       setFieldFilter("all");
       setQuery("");
+      const counts = getIssueCounts(validationResult);
       track("check_completed", {
         source: "sample",
         processing_mode: "main_thread",
         row_count_bucket: bucketCount(parsedCsv.rawRowCount),
         issue_count_bucket: bucketCount(validationResult.issues.length),
+        critical_count_bucket: bucketCount(counts.critical),
+        warning_count_bucket: bucketCount(counts.warning),
         risk_status: validationResult.riskStatus,
       });
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not load the sample CSV.";
       setParsed(null);
       setResult(null);
-      setError(err instanceof Error ? err.message : "Could not load the sample CSV.");
+      setError(message);
+      track("parse_failed", {
+        source: "sample",
+        reason: parseFailureReason(message),
+        size_bucket: "sample",
+      });
     } finally {
       setIsChecking(false);
     }
@@ -189,6 +232,23 @@ export function CheckerApp() {
   function downloadSample(sample: (typeof sampleLoaders)[number]) {
     track("sample_downloaded", { sample: sample.fileName, source: "dynamic" });
     downloadTextFile(sample.fileName, sample.csv(), "text/csv;charset=utf-8");
+  }
+
+  function updateSeverityFilter(severity: SeverityFilter) {
+    setSeverityFilter(severity);
+    track("result_filter_changed", { filter_type: "severity", value: severity });
+  }
+
+  function updateFieldFilter(value: string) {
+    setFieldFilter(value);
+    track("result_filter_changed", { filter_type: "field", value: value === "all" ? "all" : "specific_field" });
+  }
+
+  function updateSearchQuery(value: string) {
+    setQuery(value);
+    if (value.trim().length > 0) {
+      track("result_search_used", { query_length_bucket: bucketTextLength(value.trim().length) });
+    }
   }
 
   const fieldOptions = useMemo(() => {
@@ -233,9 +293,9 @@ export function CheckerApp() {
           <label htmlFor="csv-upload" className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition hover:border-blue-400 hover:bg-blue-50">
             <span className="text-lg font-semibold text-slate-950">Check CSV File Locally</span>
             <span className="mt-2 text-sm text-slate-600">CSV only · up to 10MB · processed in a browser worker when possible</span>
-            <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" />
+            <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" aria-describedby="csv-upload-privacy" />
           </label>
-          <p className="mt-3 text-center text-xs text-slate-500">No Google Ads login required. Your file stays in your browser.</p>
+          <p id="csv-upload-privacy" className="mt-3 text-center text-xs text-slate-500">No Google Ads login required. Your file stays in your browser.</p>
           <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
           <div className="mt-4 rounded-2xl bg-slate-50 p-4">
             <p className="text-sm font-semibold text-slate-700">Download fresh sample CSV files</p>
@@ -248,15 +308,18 @@ export function CheckerApp() {
         </div>
       </div>
       {parsed && result && (
-        <section className="mt-10 space-y-8">
+        <section className="mt-10 space-y-8" aria-labelledby="results-title">
           <ResultsSummary parsed={parsed} result={result} />
+          <ResultInterpretation result={result} />
           <FieldMappingPanel mapping={result.mapping} headers={parsed.headers} />
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h2 className="text-2xl font-bold text-slate-950">Detected issues</h2><p className="mt-1 text-sm text-slate-600">Filter by severity or field, search issue text, then download the full issue report.</p></div><button onClick={downloadReport} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Download full report CSV</button></div>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><h2 id="results-title" className="text-2xl font-bold text-slate-950">Detected issues</h2><p className="mt-1 text-sm text-slate-600">Filter by severity or field, search issue text, then download the full issue report.</p><p className="mt-2 text-sm text-slate-600">The report contains row number, field, severity, issue message, current value, and suggested fix. It is designed as a working checklist before you preview the corrected file in Google Ads.</p></div><button onClick={downloadReport} className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">Download row-level fix report</button></div>
             <div className="mt-6 grid gap-3 lg:grid-cols-[auto_220px_1fr] lg:items-center">
-              <div className="flex flex-wrap gap-2">{(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => <button key={severity} onClick={() => setSeverityFilter(severity)} className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${severityFilter === severity ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{severity}</button>)}</div>
-              <select value={fieldFilter} onChange={(event) => setFieldFilter(event.target.value)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-blue-500 focus:ring-2"><option value="all">All fields</option>{fieldOptions.map((field) => <option key={field} value={field}>{field}</option>)}</select>
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search row, field, rule, or message…" className="min-w-0 rounded-full border border-slate-200 px-4 py-2 text-sm outline-none ring-blue-500 focus:ring-2" />
+              <div className="flex flex-wrap gap-2" aria-label="Filter issues by severity">{(["all", "critical", "warning", "info"] as SeverityFilter[]).map((severity) => <button key={severity} onClick={() => updateSeverityFilter(severity)} className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${severityFilter === severity ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{severity}</button>)}</div>
+              <label className="sr-only" htmlFor="field-filter">Filter issues by field</label>
+              <select id="field-filter" value={fieldFilter} onChange={(event) => updateFieldFilter(event.target.value)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-blue-500 focus:ring-2"><option value="all">All fields</option>{fieldOptions.map((field) => <option key={field} value={field}>{field}</option>)}</select>
+              <label className="sr-only" htmlFor="issue-search">Search detected issues</label>
+              <input id="issue-search" value={query} onChange={(event) => updateSearchQuery(event.target.value)} placeholder="Search row, field, rule, or message…" className="min-w-0 rounded-full border border-slate-200 px-4 py-2 text-sm outline-none ring-blue-500 focus:ring-2" />
             </div>
             {filteredIssues.length > DISPLAY_LIMIT && <p className="mt-4 rounded-2xl bg-blue-50 p-3 text-sm text-blue-800">Showing the first {DISPLAY_LIMIT.toLocaleString()} matching issues for browser performance. The downloaded report includes all {result.issues.length.toLocaleString()} detected issues.</p>}
             <IssuesTable issues={visibleIssues} />
@@ -273,11 +336,31 @@ function FileSnapshot({ fileName, parsed, mapping }: { fileName: string; parsed:
 }
 
 function ResultsSummary({ parsed, result }: { parsed: ParsedCsv; result: ValidationResult }) {
-  const critical = result.issues.filter((issue) => issue.severity === "critical").length;
-  const warning = result.issues.filter((issue) => issue.severity === "warning").length;
-  const info = result.issues.filter((issue) => issue.severity === "info").length;
+  const { critical, warning, info } = getIssueCounts(result);
   const cards = [{ label: "Total rows", value: parsed.rawRowCount.toLocaleString() }, { label: "Critical", value: critical.toString() }, { label: "Warnings", value: warning.toString() }, { label: "Info", value: info.toString() }, { label: "Ready rows", value: result.readyRows.toLocaleString() }, { label: "Risk status", value: result.riskStatus }];
   return <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">{cards.map((card) => <div key={card.label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{card.label}</p><p className="mt-2 text-2xl font-bold text-slate-950">{card.value}</p></div>)}</div>;
+}
+
+function ResultInterpretation({ result }: { result: ValidationResult }) {
+  const { critical, warning, info } = getIssueCounts(result);
+  const headline = critical > 0 ? "Fix critical issues before previewing this upload" : warning > 0 ? "Review warnings before previewing in Google Ads" : "No blocking CSV-level issues detected";
+  const body = critical > 0
+    ? "Critical findings usually indicate rows that may fail import or match poorly, such as missing identifiers, missing conversion names, invalid conversion times, broken row structure, or unusable user data. Download the report and fix these rows first."
+    : warning > 0
+      ? "Warnings can still affect match quality, duplicate handling, attribution, or reporting accuracy. Review old click IDs, timezone-less timestamps, suspicious phone values, duplicate Order IDs, and unusual value or currency fields before upload."
+      : "This local preflight check did not find CSV-level blockers. Still preview the file in Google Ads before applying the upload, because account settings, conversion action ownership, click ownership, and final attribution cannot be verified locally.";
+
+  return (
+    <section className="rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm" aria-labelledby="result-interpretation-title">
+      <h2 id="result-interpretation-title" className="text-2xl font-bold text-slate-950">{headline}</h2>
+      <p className="mt-3 leading-7 text-slate-700">{body}</p>
+      <dl className="mt-5 grid gap-3 text-sm md:grid-cols-3">
+        <div className="rounded-2xl bg-white p-4"><dt className="font-bold text-red-800">Critical</dt><dd className="mt-1 text-slate-700">{critical} found. Fix before upload preview.</dd></div>
+        <div className="rounded-2xl bg-white p-4"><dt className="font-bold text-amber-800">Warning</dt><dd className="mt-1 text-slate-700">{warning} found. Review before applying.</dd></div>
+        <div className="rounded-2xl bg-white p-4"><dt className="font-bold text-blue-800">Info</dt><dd className="mt-1 text-slate-700">{info} found. Use for cleanup context.</dd></div>
+      </dl>
+    </section>
+  );
 }
 
 function FieldMappingPanel({ mapping, headers }: { mapping: FieldMapping; headers: string[] }) {
@@ -288,7 +371,7 @@ function FieldMappingPanel({ mapping, headers }: { mapping: FieldMapping; header
 
 function IssuesTable({ issues }: { issues: ValidationIssue[] }) {
   if (!issues.length) return <div className="mt-6 rounded-2xl bg-emerald-50 p-6 text-emerald-900">No issues match this filter.</div>;
-  return <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200"><table className="min-w-full divide-y divide-slate-200 text-sm"><thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Row</th><th className="px-4 py-3">Field</th><th className="px-4 py-3">Issue</th><th className="px-4 py-3">Suggested fix</th><th className="px-4 py-3">Current value</th></tr></thead><tbody className="divide-y divide-slate-100 bg-white">{issues.map((issue, index) => <tr key={`${issue.id}-${issue.rowNumber ?? "file"}-${issue.field ?? ""}-${index}`}><td className="px-4 py-3"><span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${severityClass(issue.severity)}`}>{issue.severity}</span></td><td className="px-4 py-3 text-slate-700">{issue.rowNumber ?? "File"}</td><td className="px-4 py-3 text-slate-700">{issue.field ?? "—"}</td><td className="max-w-md px-4 py-3 font-medium text-slate-950">{issue.message}</td><td className="max-w-md px-4 py-3 text-slate-700">{issue.suggestion}</td><td className="max-w-xs truncate px-4 py-3 font-mono text-xs text-slate-500" title={issue.currentValue}>{issue.currentValue ?? "—"}</td></tr>)}</tbody></table></div>;
+  return <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200"><table className="min-w-full divide-y divide-slate-200 text-sm"><caption className="sr-only">Detected Google Ads offline conversion CSV issues</caption><thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3" scope="col">Severity</th><th className="px-4 py-3" scope="col">Row</th><th className="px-4 py-3" scope="col">Field</th><th className="px-4 py-3" scope="col">Issue</th><th className="px-4 py-3" scope="col">Suggested fix</th><th className="px-4 py-3" scope="col">Current value</th></tr></thead><tbody className="divide-y divide-slate-100 bg-white">{issues.map((issue, index) => <tr key={`${issue.id}-${issue.rowNumber ?? "file"}-${issue.field ?? ""}-${index}`}><td className="px-4 py-3"><span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${severityClass(issue.severity)}`}>{issue.severity}</span></td><td className="px-4 py-3 text-slate-700">{issue.rowNumber ?? "File"}</td><td className="px-4 py-3 text-slate-700">{issue.field ?? "—"}</td><td className="max-w-md px-4 py-3 font-medium text-slate-950">{issue.message}</td><td className="max-w-md px-4 py-3 text-slate-700">{issue.suggestion}</td><td className="max-w-xs truncate px-4 py-3 font-mono text-xs text-slate-500" title={issue.currentValue}>{issue.currentValue ?? "—"}</td></tr>)}</tbody></table></div>;
 }
 
 function severityClass(severity: ValidationIssue["severity"]) {
