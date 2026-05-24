@@ -16,12 +16,16 @@ const faqs = [
     answer: "No. The file is processed locally in your browser. The checker does not upload your CSV file to a server and does not store row data.",
   },
   {
+    question: "Is this an official Google tool?",
+    answer: "No. This is an independent CSV preflight checker. It is not an official Google product and is not affiliated with Google.",
+  },
+  {
     question: "Can this guarantee my Google Ads upload will succeed?",
-    answer: "No. It checks CSV-level issues only. Google Ads account settings, conversion action ownership, click ownership, MCC permissions, and final attribution must still be checked inside Google Ads.",
+    answer: "No. It checks CSV-level issues only. Google Ads account settings, conversion action ownership, click ownership, MCC permissions, customer data terms, and final attribution must still be checked inside Google Ads.",
   },
   {
     question: "Does it support Enhanced Conversions for Leads?",
-    answer: "Yes. The checker can detect common user-provided data issues such as invalid email, suspicious phone values, plain-text user data, and invalid SHA-256 hash-like values.",
+    answer: "It supports CSV-level checks for common user-provided data risks, such as invalid email format, suspicious phone values, plain-text user data, and invalid SHA-256 hash-like values. It does not verify your account setup, consent configuration, or final Google Ads matching result.",
   },
   {
     question: "Can it fix my CSV automatically?",
@@ -80,7 +84,7 @@ export default function FaqPage() {
       <a href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">← Back to checker</a>
       <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950">FAQ</h1>
       <p className="mt-4 text-lg leading-8 text-slate-700">
-        Common questions about privacy, scope, supported files, and what this Google Ads offline conversion CSV checker can and cannot verify.
+        Common questions about privacy, independence, scope, supported files, and what this Google Ads offline conversion CSV checker can and cannot verify.
       </p>
       <div className="mt-8 space-y-4">
         {faqs.map((faq) => (
