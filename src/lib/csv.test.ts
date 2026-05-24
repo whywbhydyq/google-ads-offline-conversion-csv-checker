@@ -20,6 +20,14 @@ describe("parseCsvText", () => {
     expect(parsed.rows[0]["Email__duplicate_2"]).toBe("second@example.com");
   });
 
+  it("preserves values from empty headers without overwriting columns", () => {
+    const parsed = parseCsvText(",,Conversion Name\nfirst-empty,second-empty,Lead");
+
+    expect(parsed.headers).toEqual(["", "", "Conversion Name"]);
+    expect(parsed.rows[0]["__empty_header_1"]).toBe("first-empty");
+    expect(parsed.rows[0]["__empty_header_2"]).toBe("second-empty");
+  });
+
   it("throws for empty input", () => {
     expect(() => parseCsvText("\n\n")).toThrow("empty");
   });
