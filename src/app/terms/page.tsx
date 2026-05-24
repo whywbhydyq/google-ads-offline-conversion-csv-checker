@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Use",
   description: "Terms of use for the browser-local Google Ads Offline Conversion CSV Checker.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {
