@@ -282,11 +282,10 @@ export function CheckerApp() {
     <section className="mx-auto max-w-7xl px-6 py-10 lg:py-16" aria-labelledby="checker-title">
       <div className="grid gap-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-center">
         <div>
-          <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Free local preflight checker</p>
+          <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Independent local CSV preflight checker</p>
           <h1 id="checker-title" className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to catch common Google Ads offline conversion import risks before you preview or apply the file: missing headers, invalid conversion times, old click IDs, unhashed user data, duplicate rows, and value or currency formatting issues.</p>
-          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"><strong>Privacy:</strong> Your CSV is parsed locally in this browser. It is not uploaded to our server and row-level conversion data is not stored.</div>
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">This is a CSV-level preflight check only. Google Ads can still reject or ignore rows because of account settings, conversion action ownership, click ownership, customer data terms, or attribution eligibility.</div>
+          <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">Browser-local processing: your CSV is not uploaded to our server. This independent tool focuses on CSV-level checks and does not verify Google Ads account settings, conversion ownership, or final import results.</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft" aria-labelledby="upload-title">
           <h2 id="upload-title" className="sr-only">Upload a CSV for a local preflight check</h2>
