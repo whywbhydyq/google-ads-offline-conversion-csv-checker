@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact",
   description: "Contact page for feedback about the Google Ads Offline Conversion CSV Checker.",
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {
@@ -31,7 +32,7 @@ export default function ContactPage() {
       <section className="mt-6 rounded-3xl border border-blue-200 bg-blue-50 p-6">
         <h2 className="text-2xl font-bold text-slate-950">Feedback channel</h2>
         <p className="mt-3 leading-7 text-slate-700">
-          For now, use the GitHub repository issue tracker or your normal project feedback channel. A dedicated support email can be added after the domain and brand are finalized.
+          Use the <a href="https://github.com/whywbhydyq/google-ads-offline-conversion-csv-checker/issues" className="font-semibold text-blue-700 hover:text-blue-900">GitHub issue tracker</a> for bug reports and feature requests. Include a redacted example when the problem depends on CSV structure.
         </p>
       </section>
     </main>
