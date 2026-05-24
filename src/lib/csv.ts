@@ -31,15 +31,27 @@ export function parseCsvText(text: string): ParsedCsv {
   const headers = (rawRows[0] ?? []).map((h) => String(h ?? "").trim());
   if (!headers.length || headers.every((h) => !h)) throw new Error("No header row detected.");
 
+  const uniqueHeaders = makeUniqueHeaders(headers);
   const rows = rawRows.slice(1).map((row) => {
     const record: Record<string, string> = {};
-    headers.forEach((header, index) => {
+    uniqueHeaders.forEach((header, index) => {
       record[header] = String(row[index] ?? "").trim();
     });
     return record;
   });
 
   return { headers, rows, rawRows, rawRowCount: rows.length };
+}
+
+function makeUniqueHeaders(headers: string[]) {
+  const seen = new Map<string, number>();
+
+  return headers.map((header, index) => {
+    const key = header || `Column ${index + 1}`;
+    const count = seen.get(key) ?? 0;
+    seen.set(key, count + 1);
+    return count === 0 ? header : `${header}__duplicate_${count + 1}`;
+  });
 }
 
 export function exportIssuesCsv(issues: ValidationIssue[]): string {
