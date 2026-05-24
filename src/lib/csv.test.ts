@@ -12,6 +12,14 @@ describe("parseCsvText", () => {
     expect(parsed.rows[0]["Google Click ID"]).toBe("abc123");
   });
 
+  it("preserves values from duplicate headers for structural reporting", () => {
+    const parsed = parseCsvText("Email,Email,Conversion Name\nfirst@example.com,second@example.com,Lead");
+
+    expect(parsed.headers).toEqual(["Email", "Email", "Conversion Name"]);
+    expect(parsed.rows[0]["Email"]).toBe("first@example.com");
+    expect(parsed.rows[0]["Email__duplicate_2"]).toBe("second@example.com");
+  });
+
   it("throws for empty input", () => {
     expect(() => parseCsvText("\n\n")).toThrow("empty");
   });
