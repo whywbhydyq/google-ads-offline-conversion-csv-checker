@@ -7,6 +7,7 @@ const routes = [
   { path: "/about", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.5 },
   { path: "/terms", changeFrequency: "yearly" as const, priority: 0.5 },
+  { path: "/disclaimer", changeFrequency: "yearly" as const, priority: 0.5 },
   { path: "/contact", changeFrequency: "yearly" as const, priority: 0.5 },
   { path: "/guide", changeFrequency: "monthly" as const, priority: 0.8 },
   { path: "/guide/google-ads-offline-conversion-upload-errors", changeFrequency: "monthly" as const, priority: 0.85 },
