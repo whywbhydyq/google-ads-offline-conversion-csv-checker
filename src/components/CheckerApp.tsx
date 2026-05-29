@@ -284,7 +284,7 @@ export function CheckerApp() {
         <div>
           <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Independent local CSV preflight checker</p>
           <h1 id="checker-title" className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to catch common Google Ads offline conversion import risks before you preview or apply the file: missing headers, invalid conversion times, old click IDs, unhashed user data, duplicate rows, and value or currency formatting issues.</p>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to validate required columns, conversion time format, GCLID, GBRAID, WBRAID, conversion value, currency, user data, duplicate rows, and common Google Ads import errors before previewing the file.</p>
           <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">Browser-local processing: your CSV is not uploaded to our server. This independent tool focuses on CSV-level checks and does not verify Google Ads account settings, conversion ownership, or final import results.</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft" aria-labelledby="upload-title">

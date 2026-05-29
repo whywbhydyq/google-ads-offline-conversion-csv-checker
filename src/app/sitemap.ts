@@ -11,6 +11,8 @@ const routes = [
   { path: "/contact", changeFrequency: "yearly" as const, priority: 0.5 },
   { path: "/guide", changeFrequency: "monthly" as const, priority: 0.8 },
   { path: "/guide/google-ads-offline-conversion-upload-errors", changeFrequency: "monthly" as const, priority: 0.85 },
+  { path: "/guide/google-ads-conversion-time-format", changeFrequency: "monthly" as const, priority: 0.82 },
+  { path: "/guide/gclid-gbraid-wbraid-offline-conversion-csv", changeFrequency: "monthly" as const, priority: 0.82 },
   { path: "/guide/offline-conversion-csv-template-checklist", changeFrequency: "monthly" as const, priority: 0.75 },
   { path: "/guide/enhanced-conversions-for-leads-csv-errors", changeFrequency: "monthly" as const, priority: 0.75 },
 ];
