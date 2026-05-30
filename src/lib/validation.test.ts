@@ -168,6 +168,43 @@ describe("validateCsv", () => {
     expect(result.issues.map((issue) => issue.id)).not.toContain("HASH_INVALID_LENGTH");
   });
 
+
+
+  it("blocks rows that only contain invalid email or phone identifiers", () => {
+    const result = validateCsv(parseCsvText([
+      "Email,Phone,Conversion Name,Conversion Time",
+      `bad-email,callme,Qualified lead,${dateTimeFromNow(-1)}`,
+    ].join("\n")), "user_data_preflight");
+    const ids = result.issues.map((issue) => issue.id);
+
+    expect(ids).toContain("NO_VALID_USER_DATA_IDENTIFIER");
+    expect(result.issues.find((issue) => issue.id === "EMAIL_INVALID")?.severity).toBe("warning");
+    expect(result.issues.find((issue) => issue.id === "PHONE_INVALID")?.severity).toBe("warning");
+    expect(result.readyRows).toBe(0);
+  });
+
+  it("treats invalid plain user data as critical in scheduled pre-hashed mode", () => {
+    const result = validateCsv(parseCsvText([
+      "Email,Phone,Conversion Name,Conversion Time",
+      `bad-email,callme,Qualified lead,${dateTimeFromNow(-1)}`,
+    ].join("\n")), "user_data_scheduled_prehashed");
+
+    expect(result.issues.find((issue) => issue.id === "EMAIL_INVALID")?.severity).toBe("critical");
+    expect(result.issues.find((issue) => issue.id === "PHONE_INVALID")?.severity).toBe("critical");
+    expect(result.readyRows).toBe(0);
+  });
+
+  it("treats suspicious click IDs as critical in click ID workflow", () => {
+    const result = validateCsv(parseCsvText([
+      "Google Click ID,Conversion Name,Conversion Time",
+      `bad id,Qualified lead,${dateTimeFromNow(-1)}`,
+    ].join("\n")), "click_id_upload");
+
+    expect(result.issues.find((issue) => issue.id === "NO_VALID_CLICK_ID_VALUE")?.severity).toBe("critical");
+    expect(result.issues.find((issue) => issue.id === "SUSPICIOUS_GCLID")?.severity).toBe("critical");
+    expect(result.readyRows).toBe(0);
+  });
+
   it("detects duplicate conversions and duplicate order IDs", () => {
     const time = dateTimeFromNow(-1);
     const result = validate([
@@ -181,7 +218,7 @@ describe("validateCsv", () => {
     expect(ids).toContain("DUPLICATE_ORDER_ID");
   });
 
-  it("warns about invalid conversion values and currency formats", () => {
+  it("blocks invalid conversion values and malformed currency formats", () => {
     const result = validate([
       "Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency",
       `EAIaIQobChMIvalidGclid01,Qualified lead,${dateTimeFromNow(-1)},abc,US`,
@@ -190,5 +227,7 @@ describe("validateCsv", () => {
 
     expect(ids).toContain("INVALID_CONVERSION_VALUE");
     expect(ids).toContain("INVALID_CURRENCY");
+    expect(result.issues.find((issue) => issue.id === "INVALID_CONVERSION_VALUE")?.severity).toBe("critical");
+    expect(result.issues.find((issue) => issue.id === "INVALID_CURRENCY")?.severity).toBe("critical");
   });
 });

@@ -24,6 +24,13 @@ export default function PrivacyPage() {
           We use Vercel Analytics to understand high-level product usage. Events may include actions such as file selected, sample loaded, check completed, or report downloaded. These events use bucketed counts and status labels only; they do not include CSV contents, file names, raw row values, click IDs, emails, phone numbers, or conversion data.
         </p>
       </section>
+
+      <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-2xl font-bold text-slate-950">Third-party scripts and ads</h2>
+        <p className="mt-3 leading-7 text-slate-700">
+          The site may load Google AdSense after the page becomes idle. Ad scripts do not receive your CSV file, parsed rows, click IDs, email addresses, phone numbers, order IDs, conversion values, or downloaded report contents from this checker. Ad providers may still process browser-level signals according to their own policies.
+        </p>
+      </section>
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-950">No Google Ads account access</h2>
         <p className="mt-3 leading-7 text-slate-700">

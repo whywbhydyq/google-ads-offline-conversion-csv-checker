@@ -1,6 +1,7 @@
 import type { FieldMapping, ParsedCsv, ValidationIssue, ValidationMode } from "../types";
 import { checkDuplicateConversion, checkDuplicateOrderId } from "./duplicateRules";
 import { get, issue } from "./helpers";
+import { hasAnyAddressValue, hasClickIdValue, hasUserIdentifierValue } from "./identifierHelpers";
 import { checkIdentifiers } from "./identifierRules";
 import { getValidationModeCopy } from "./modes";
 import { checkTime, isValidFileTimezone } from "./timeRules";
@@ -27,7 +28,7 @@ export function checkRows(parsed: ParsedCsv, mapping: FieldMapping, mode: Valida
     }
 
     if (mapping.conversion_time) {
-      checkTime(get(row, mapping.conversion_time), mapping.conversion_time, rowNumber, issues, modeCopy.ageLimitDays, fileTimezone);
+      checkTime(get(row, mapping.conversion_time), mapping.conversion_time, rowNumber, issues, getAgeLimitDaysForRow(row, mapping, mode, modeCopy.ageLimitDays), fileTimezone);
     }
 
     checkIdentifiers(row, mapping, mode, rowNumber, issues);
@@ -38,4 +39,15 @@ export function checkRows(parsed: ParsedCsv, mapping: FieldMapping, mode: Valida
   });
 
   return issues;
+}
+
+function getAgeLimitDaysForRow(row: Record<string, string>, mapping: FieldMapping, mode: ValidationMode, defaultAgeLimitDays: number) {
+  if (mode !== "mixed_identifiers") return defaultAgeLimitDays;
+
+  const hasClickId = hasClickIdValue(row, mapping);
+  const hasUserData = hasUserIdentifierValue(row, mapping) || hasAnyAddressValue(row, mapping);
+
+  if (hasClickId && !hasUserData) return 90;
+  if (hasUserData) return 63;
+  return defaultAgeLimitDays;
 }

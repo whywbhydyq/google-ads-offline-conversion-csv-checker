@@ -25,7 +25,7 @@ export function checkValueCurrency(row: Record<string, string>, mapping: FieldMa
   if (value) {
     const numeric = Number(value.replace(/[$,\s]/g, ""));
     if (!Number.isFinite(numeric)) {
-      issues.push(issue("INVALID_CONVERSION_VALUE", "warning", "Conversion Value is not numeric.", "Use a numeric value without currency symbols or text.", { rowNumber, field: mapping.conversion_value, currentValue: value }));
+      issues.push(issue("INVALID_CONVERSION_VALUE", "critical", "Conversion Value is not numeric.", "Use a numeric value without currency symbols or text.", { rowNumber, field: mapping.conversion_value, currentValue: value }));
     } else if (numeric < 0) {
       issues.push(issue("NEGATIVE_CONVERSION_VALUE", "warning", "Conversion Value is negative.", "Check if negative values are intended for your import workflow.", { rowNumber, field: mapping.conversion_value, currentValue: value }));
     }
@@ -38,7 +38,7 @@ export function checkValueCurrency(row: Record<string, string>, mapping: FieldMa
   if (currency) {
     const normalizedCurrency = currency.toUpperCase();
     if (!/^[A-Z]{3}$/.test(normalizedCurrency)) {
-      issues.push(issue("INVALID_CURRENCY", "warning", "Currency is not a three-letter ISO 4217 code.", "Use codes like USD, EUR, GBP, SGD, JPY, or TWD.", { rowNumber, field: mapping.conversion_currency, currentValue: currency }));
+      issues.push(issue("INVALID_CURRENCY", "critical", "Currency is not a three-letter ISO 4217 code.", "Use codes like USD, EUR, GBP, SGD, JPY, or TWD.", { rowNumber, field: mapping.conversion_currency, currentValue: currency }));
     } else if (!iso4217Currencies.has(normalizedCurrency)) {
       issues.push(issue("UNKNOWN_ISO_CURRENCY", "warning", "Currency has three letters but is not in the built-in ISO 4217 currency list.", "Check the currency code against the official currency expected by your Google Ads account.", { rowNumber, field: mapping.conversion_currency, currentValue: currency }));
     }

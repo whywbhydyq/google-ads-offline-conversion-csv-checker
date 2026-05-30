@@ -3,8 +3,8 @@ import { JsonLd } from "@/components/JsonLd";
 import { siteName, siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "FAQ",
-  description: "Frequently asked questions about the browser-local Google Ads Offline Conversion CSV Checker.",
+  title: "Google Ads Offline Conversion CSV Checker FAQ",
+  description: "Answers about local CSV processing, supported files, enhanced conversions limits, report downloads, privacy, and final Google Ads validation.",
   alternates: {
     canonical: "/faq",
   },
@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     question: "Does it support Enhanced Conversions for Leads?",
-    answer: "It supports CSV-level checks for common user-provided data risks, such as invalid email format, suspicious phone values, plain-text user data, and invalid SHA-256 hash-like values. It does not verify your account setup, consent configuration, or final Google Ads matching result.",
+    answer: "It supports local CSV-level checks for user-provided data risks, such as invalid email format, suspicious phone values, plain-text values in pre-hashed workflows, incomplete address data, consent values, and invalid SHA-256 hash-like values. It is not a Google Ads Data Manager schema validator and does not verify final matching.",
   },
   {
     question: "Can it fix my CSV automatically?",
@@ -71,7 +71,7 @@ const faqJsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    name: `FAQ | ${siteName}`,
+    name: `Google Ads Offline Conversion CSV Checker FAQ | ${siteName}`,
     description: metadata.description,
     url: `${siteUrl}/faq`,
   },
@@ -82,7 +82,7 @@ export default function FaqPage() {
     <main className="mx-auto max-w-4xl px-6 py-12">
       <JsonLd data={faqJsonLd} />
       <a href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">← Back to checker</a>
-      <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950">FAQ</h1>
+      <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950">Google Ads Offline Conversion CSV Checker FAQ</h1>
       <p className="mt-4 text-lg leading-8 text-slate-700">
         Common questions about privacy, independence, scope, supported files, and what this Google Ads offline conversion CSV checker can and cannot verify.
       </p>

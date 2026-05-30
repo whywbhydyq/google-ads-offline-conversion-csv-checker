@@ -1,5 +1,6 @@
 import { CheckerApp } from "@/components/CheckerApp";
 import { JsonLd } from "@/components/JsonLd";
+import { OfficialSources, officialSources } from "@/components/GuideSupportBlocks";
 import { defaultDescription, defaultTitle, siteName, siteUrl } from "@/lib/site";
 
 const supportedColumns = [
@@ -197,6 +198,8 @@ function StaticSeoContent() {
           This checker does not connect to Google Ads, does not use OAuth, and does not call the Google Ads API. It cannot verify conversion action ownership, account-level settings, click ownership, MCC permissions, customer data terms, import preview status, or final attribution. Treat it as a local CSV smoke test, then preview the corrected file in Google Ads before applying the upload.
         </p>
       </section>
+
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsApiClickSample, officialSources.googleAdsDataManager]} />
 
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="faq-preview">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

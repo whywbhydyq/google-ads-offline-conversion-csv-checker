@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { track } from "@vercel/analytics";
 import { downloadTextFile, exportIssuesCsv, parseCsvText } from "@/lib/csv";
 import type { FieldMapping, ParsedCsv, ValidationIssue, ValidationModeInput, ValidationResult } from "@/lib/types";
@@ -154,16 +154,19 @@ export function CheckerApp() {
   const [isChecking, setIsChecking] = useState(false);
   const [workflowMode, setWorkflowMode] = useState<WorkflowSelection>("auto");
   const [lastCsvText, setLastCsvText] = useState("");
+  const activeValidationRequestRef = useRef(0);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const requestId = ++activeValidationRequestRef.current;
     setFileName(file.name);
     setError("");
     setIsChecking(true);
     track("file_selected", { size_bucket: bucketCount(file.size) });
     try {
       const { parsed: parsedCsv, result: validationResult, source, text } = await validateUploadedFile(file, workflowMode);
+      if (requestId !== activeValidationRequestRef.current) return;
       setLastCsvText(text);
       setParsed(parsedCsv);
       setResult(validationResult);
@@ -184,6 +187,7 @@ export function CheckerApp() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong while parsing this CSV.";
+      if (requestId !== activeValidationRequestRef.current) return;
       setLastCsvText("");
       setParsed(null);
       setResult(null);
@@ -194,11 +198,12 @@ export function CheckerApp() {
         size_bucket: bucketCount(file.size),
       });
     } finally {
-      setIsChecking(false);
+      if (requestId === activeValidationRequestRef.current) setIsChecking(false);
     }
   }
 
   function loadSample(sample: (typeof sampleLoaders)[number]) {
+    const requestId = ++activeValidationRequestRef.current;
     setFileName(sample.fileName);
     setWorkflowMode(sample.mode);
     setError("");
@@ -228,6 +233,7 @@ export function CheckerApp() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not load the sample CSV.";
+      if (requestId !== activeValidationRequestRef.current) return;
       setLastCsvText("");
       setParsed(null);
       setResult(null);
@@ -238,11 +244,12 @@ export function CheckerApp() {
         size_bucket: "sample",
       });
     } finally {
-      setIsChecking(false);
+      if (requestId === activeValidationRequestRef.current) setIsChecking(false);
     }
   }
 
   async function updateWorkflowMode(value: WorkflowSelection) {
+    const requestId = ++activeValidationRequestRef.current;
     setWorkflowMode(value);
     setError("");
     setSeverityFilter("all");
@@ -255,6 +262,7 @@ export function CheckerApp() {
     setIsChecking(true);
     try {
       const { parsed: parsedCsv, result: validationResult, source } = await validateCsvTextInWorker(lastCsvText, value);
+      if (requestId !== activeValidationRequestRef.current) return;
       setParsed(parsedCsv);
       setResult(validationResult);
       const counts = getIssueCounts(validationResult);
@@ -271,6 +279,7 @@ export function CheckerApp() {
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not re-check this CSV with the selected workflow.";
+      if (requestId !== activeValidationRequestRef.current) return;
       setParsed(null);
       setResult(null);
       setError(message);
@@ -280,7 +289,7 @@ export function CheckerApp() {
         size_bucket: bucketCount(lastCsvText.length),
       });
     } finally {
-      setIsChecking(false);
+      if (requestId === activeValidationRequestRef.current) setIsChecking(false);
     }
   }
 

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/JsonLd";
+import { CONTENT_DATE_MODIFIED, LastUpdated, LocalValidationBoundary, OfficialSources, officialSources } from "@/components/GuideSupportBlocks";
 import { siteName, siteUrl } from "@/lib/site";
 
 const pageTitle = "Offline Conversion CSV Template Checklist";
-const pageDescription = "A practical checklist for Google Ads offline conversion CSV columns, identifiers, dates, values, and currencies before upload.";
+const pageDescription = "A practical checklist for Google Ads offline conversion CSV identifiers, conversion names, timestamps, values, ISO 4217 currency codes, consent fields, and duplicates before upload.";
 const pagePath = "/guide/offline-conversion-csv-template-checklist";
 
 export const metadata: Metadata = {
@@ -14,13 +15,20 @@ export const metadata: Metadata = {
   },
 };
 
+const workflowItems = [
+  ["Click ID upload", "Use GCLID, GBRAID, or WBRAID fields. Keep one click identifier per click-conversion row when the workflow requires exactly one."],
+  ["Scheduled/pre-hashed user-data upload", "Use pre-hashed user-provided data where required by your workflow. Plain email, phone, first name, last name, or street address values should be reviewed as blockers."],
+  ["Manual unhashed review", "Manual workflows may allow Google Ads to hash some plain values, but you still need valid email/phone formatting and final preview in Google Ads."],
+  ["Data Manager / ECL boundary", "Do not treat this local checker as a Google Ads Data Manager schema validator or an official account setup check."],
+];
+
 const items = [
-  ["Identifier", "Use GCLID, GBRAID, WBRAID, email, phone, or address-style user data. Every row needs at least one usable identifier."],
+  ["Identifier", "Every row needs a usable identifier for the chosen workflow: a valid click ID, valid email, valid phone, or complete address-style user data. Location-only fields such as country or postal code are not enough."],
   ["Conversion Name", "Match the conversion action name used in Google Ads. Empty values are a high-risk upload problem."],
-  ["Conversion Time", "Use a parseable date and time. Include a timezone such as +08:00 where possible."],
-  ["Value and Currency", "Use numeric conversion values and three-letter currency codes such as USD, EUR, GBP, SGD, or JPY."],
-  ["Order ID", "Use Order ID when available to reduce duplicate import risk and make troubleshooting easier."],
-  ["Duplicates", "Check repeated identifier + conversion name + conversion time combinations before importing."],
+  ["Conversion Time", "Use a parseable date and time. Include a row-level timezone or a file-level Parameters:TimeZone row when your export uses one timezone."],
+  ["Value and Currency", "Use numeric conversion values and ISO 4217 currency codes such as USD, EUR, GBP, SGD, or JPY."],
+  ["Consent", "If your workflow uses consent signals, review Ad User Data and Ad Personalization values before previewing the file."],
+  ["Order ID and duplicates", "Use Order ID when appropriate, then check repeated identifier + conversion name + conversion time combinations before importing."],
 ];
 
 const checklistJsonLd = [
@@ -32,6 +40,7 @@ const checklistJsonLd = [
     mainEntityOfPage: `${siteUrl}${pagePath}`,
     author: { "@type": "Organization", name: siteName, url: siteUrl },
     publisher: { "@type": "Organization", name: siteName, url: siteUrl },
+    dateModified: CONTENT_DATE_MODIFIED,
   },
   {
     "@context": "https://schema.org",
@@ -50,15 +59,33 @@ export default function TemplateChecklistPage() {
       <JsonLd data={checklistJsonLd} />
       <a href="/guide" className="text-sm font-semibold text-blue-700 hover:text-blue-900">Back to guides</a>
       <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
-      <p className="mt-5 text-lg leading-8 text-slate-700">Use this checklist before uploading an offline conversion CSV to Google Ads.</p>
-      <div className="mt-10 space-y-5">
+      <p className="mt-5 text-lg leading-8 text-slate-700">Use this checklist before uploading an offline conversion CSV to Google Ads preview.</p>
+      <LastUpdated />
+
+      <section className="mt-8 rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm" aria-labelledby="workflow-checklist">
+        <h2 id="workflow-checklist" className="text-2xl font-bold text-slate-950">Choose the workflow before reading the report</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {workflowItems.map(([title, body]) => (
+            <article key={title} className="rounded-2xl bg-white p-5">
+              <h3 className="font-bold text-slate-950">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 space-y-5" aria-labelledby="csv-template-items">
+        <h2 id="csv-template-items" className="sr-only">CSV template items</h2>
         {items.map(([title, body]) => (
           <section key={title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-2xl font-bold text-slate-950">{title}</h2>
+            <h3 className="text-2xl font-bold text-slate-950">{title}</h3>
             <p className="mt-3 leading-7 text-slate-700">{body}</p>
           </section>
         ))}
-      </div>
+      </section>
+
+      <LocalValidationBoundary />
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsApiClickSample, officialSources.googleAdsDataManager]} />
       <a href="/" className="mt-8 inline-flex rounded-full bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800">Check a CSV</a>
     </main>
   );
