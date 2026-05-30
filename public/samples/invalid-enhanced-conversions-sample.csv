@@ -1,7 +1,0 @@
-Email,Phone,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Order ID
-bad-email,callme,Qualified lead,2026-05-23 10:00:00,abc,US,ORDER-2001
-jane@example.com,+14155552671,,2026-01-01,99.00,USD,ORDER-2002
-abcdef1234567890abcdef1234567890,+442071838750,Purchase,not a date,-10,GBP,ORDER-2002
-, ,Purchase,2026-05-21 12:00:00+08:00,50,SGD,ORDER-2004
-jane@example.com,+14155552671,Qualified lead,2026-01-01,99.00,USD,ORDER-2005
-jane@example.com,+14155552671,Qualified lead,2026-01-01,99.00,USD,ORDER-2006

@@ -30,7 +30,7 @@ export function checkStructure(parsed: ParsedCsv): ValidationIssue[] {
           "warning",
           `This row has ${row.length} columns, but the header has ${parsed.headers.length}.`,
           "Check extra commas, missing values, or broken quotes.",
-          { rowNumber: index + 2, currentValue: row.join(",") },
+          { rowNumber: parsed.rowNumbers[index] ?? index + parsed.headerRowNumber + 1, currentValue: row.join(",") },
         ),
       );
     }

@@ -12,6 +12,17 @@ describe("parseCsvText", () => {
     expect(parsed.rows[0]["Google Click ID"]).toBe("abc123");
   });
 
+
+  it("extracts Google Ads Parameters:TimeZone rows before the header", () => {
+    const parsed = parseCsvText("Parameters:TimeZone=America/Los_Angeles\nGoogle Click ID,Conversion Name,Conversion Time\nabc123,Lead,05/22/2026 14:30:00");
+
+    expect(parsed.parameters.timezone).toBe("America/Los_Angeles");
+    expect(parsed.headerRowNumber).toBe(2);
+    expect(parsed.rowNumbers).toEqual([3]);
+    expect(parsed.headers).toEqual(["Google Click ID", "Conversion Name", "Conversion Time"]);
+    expect(parsed.rawRowCount).toBe(1);
+  });
+
   it("preserves values from duplicate headers for structural reporting", () => {
     const parsed = parseCsvText("Email,Email,Conversion Name\nfirst@example.com,second@example.com,Lead");
 

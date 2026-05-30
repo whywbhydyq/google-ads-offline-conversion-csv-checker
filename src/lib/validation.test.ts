@@ -41,12 +41,13 @@ describe("detectFields", () => {
   });
 
   it("detects enhanced-conversion user data columns", () => {
-    const mapping = detectFields(["Email Address", "Phone Number", "First Name", "Zip"]);
+    const mapping = detectFields(["Email Address", "Phone Number", "First Name", "Zip", "Ad User Data"]);
 
     expect(mapping.email).toBe("Email Address");
     expect(mapping.phone).toBe("Phone Number");
     expect(mapping.first_name).toBe("First Name");
     expect(mapping.zip).toBe("Zip");
+    expect(mapping.ad_user_data).toBe("Ad User Data");
   });
 });
 
@@ -75,7 +76,7 @@ describe("validateCsv", () => {
       `,Qualified lead,${dateTimeFromNow(-1)}`,
     ].join("\n"));
 
-    expect(result.issues.map((issue) => issue.id)).toContain("EMPTY_CLICK_ID");
+    expect(result.issues.map((issue) => issue.id)).toContain("EMPTY_IDENTIFIER");
   });
 
   it("detects invalid, future, date-only, and timezone-less conversion times", () => {
@@ -91,6 +92,71 @@ describe("validateCsv", () => {
     expect(ids).toContain("FUTURE_CONVERSION_TIME");
     expect(ids).toContain("DATE_ONLY_TIME");
     expect(ids).toContain("MISSING_TIMEZONE");
+  });
+
+
+  it("uses Parameters:TimeZone as file-level timezone for official-style CSV files", () => {
+    const result = validate([
+      "Parameters:TimeZone=America/Los_Angeles",
+      "Google Click ID,Conversion Name,Conversion Time",
+      "EAIaIQobChMIvalidGclid01,Qualified lead,05/22/2026 14:30:00",
+    ].join("\n"));
+
+    expect(result.issues.map((issue) => issue.id)).not.toContain("MISSING_TIMEZONE");
+    expect(result.issues.map((issue) => issue.id)).not.toContain("INVALID_CONVERSION_TIME");
+  });
+
+  it("does not treat location-only address data as a usable identifier", () => {
+    const result = validate([
+      "Country,Zip,Conversion Name,Conversion Time",
+      `US,94043,Qualified lead,${dateTimeFromNow(-1)}`,
+    ].join("\n"));
+    const ids = result.issues.map((issue) => issue.id);
+
+    expect(ids).toContain("LOCATION_ONLY_ADDRESS_COLUMNS");
+    expect(ids).toContain("LOCATION_ONLY_IDENTIFIER");
+    expect(result.readyRows).toBe(0);
+  });
+
+  it("accepts official-style numeric timezone offsets with or without a separating space", () => {
+    const result = validate([
+      "Google Click ID,Conversion Name,Conversion Time",
+      "EAIaIQobChMIvalidGclid01,Qualified lead,05/22/2026 14:30:00 -0500",
+      "EAIaIQobChMIvalidGclid02,Qualified lead,2026-05-22 14:30:00+0800",
+    ].join("\n"));
+
+    expect(result.issues.map((issue) => issue.id)).not.toContain("INVALID_CONVERSION_TIME");
+  });
+
+  it("accepts Parameters:TimeZone with a GMT offset", () => {
+    const result = validate([
+      "Parameters:TimeZone=-0500",
+      "Google Click ID,Conversion Name,Conversion Time",
+      "EAIaIQobChMIvalidGclid01,Qualified lead,05/22/2026 14:30:00",
+    ].join("\n"));
+
+    expect(result.issues.map((issue) => issue.id)).not.toContain("INVALID_FILE_TIMEZONE_PARAMETER");
+    expect(result.issues.map((issue) => issue.id)).not.toContain("MISSING_TIMEZONE");
+    expect(result.issues.map((issue) => issue.id)).not.toContain("INVALID_CONVERSION_TIME");
+  });
+
+  it("treats multiple click IDs as critical in click ID workflow", () => {
+    const result = validateCsv(parseCsvText([
+      "Google Click ID,GBRAID,Conversion Name,Conversion Time",
+      `EAIaIQobChMIvalidGclid01,gbraid_valid_12345,Qualified lead,${dateTimeFromNow(-1)}`,
+    ].join("\n")), "click_id_upload");
+
+    const issue = result.issues.find((item) => item.id === "MULTIPLE_CLICK_IDS");
+    expect(issue?.severity).toBe("critical");
+  });
+
+  it("does not let empty user-data headers force mixed mode when click IDs have values", () => {
+    const result = validate([
+      "Google Click ID,Email,Conversion Name,Conversion Time",
+      `EAIaIQobChMIvalidGclid01,,Qualified lead,${dateTimeFromNow(-1)}`,
+    ].join("\n"));
+
+    expect(result.mode).toBe("click_id_upload");
   });
 
   it("does not treat ordinary numeric phone numbers as broken hashes", () => {

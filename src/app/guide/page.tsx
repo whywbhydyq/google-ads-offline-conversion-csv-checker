@@ -15,7 +15,7 @@ const guides = [
   ["Conversion time format", "/guide/google-ads-conversion-time-format", "Format conversion timestamps, time zones, and date values before upload."],
   ["GCLID, GBRAID, WBRAID fields", "/guide/gclid-gbraid-wbraid-offline-conversion-csv", "Choose the right click identifier columns for offline conversion imports."],
   ["CSV template checklist", "/guide/offline-conversion-csv-template-checklist", "Review columns, dates, values, currency, and identifiers."],
-  ["Enhanced conversions CSV errors", "/guide/enhanced-conversions-for-leads-csv-errors", "Check email, phone, hash, and user data issues."],
+  ["Enhanced conversions user data preflight", "/guide/enhanced-conversions-for-leads-csv-errors", "Check email, phone, address hash, consent, and user-data issues."],
 ];
 
 const guideJsonLd = [

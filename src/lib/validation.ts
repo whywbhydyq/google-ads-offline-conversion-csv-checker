@@ -1,18 +1,21 @@
-import type { ParsedCsv, ValidationIssue, ValidationResult } from "./types";
+import type { ParsedCsv, ValidationIssue, ValidationModeInput, ValidationResult } from "./types";
 import { detectFields, normalizeHeader } from "./validation/fieldDetection";
 import { dedupeIssues, sortIssues } from "./validation/helpers";
+import { resolveValidationMode } from "./validation/modes";
 import { checkRequired } from "./validation/requiredFieldRules";
 import { checkRows } from "./validation/rowRules";
 import { checkStructure } from "./validation/structureRules";
 
 export { detectFields, normalizeHeader };
+export { getValidationModeCopy } from "./validation/modes";
 
-export function validateCsv(parsed: ParsedCsv): ValidationResult {
+export function validateCsv(parsed: ParsedCsv, requestedMode: ValidationModeInput = "auto"): ValidationResult {
   const mapping = detectFields(parsed.headers);
+  const mode = resolveValidationMode(mapping, parsed.rows, requestedMode);
   const issues = dedupeIssues([
     ...checkStructure(parsed),
-    ...checkRequired(parsed, mapping),
-    ...checkRows(parsed, mapping),
+    ...checkRequired(parsed, mapping, mode),
+    ...checkRows(parsed, mapping, mode),
   ]).sort(sortIssues);
 
   const criticalRows = new Set(
@@ -27,7 +30,7 @@ export function validateCsv(parsed: ParsedCsv): ValidationResult {
       ? "High Risk"
       : criticalCount || warningCount > 10
         ? "Needs Fix"
-        : "Ready";
+        : "No CSV blockers";
 
-  return { issues, mapping, readyRows, riskStatus };
+  return { issues, mapping, mode, requestedMode, readyRows, riskStatus };
 }

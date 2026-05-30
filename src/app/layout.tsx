@@ -33,17 +33,35 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <head>
-        <script
-          async
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-          crossOrigin="anonymous"
-        />
-      </head>
       <body>
         {children}
         <Analytics />
+        <DeferredAdsenseScript />
       </body>
     </html>
   );
+}
+
+function DeferredAdsenseScript() {
+  const script = `
+(function () {
+  var loaded = false;
+  function loadAdsense() {
+    if (loaded || document.querySelector('script[data-ads-csv-adsense="true"]')) return;
+    loaded = true;
+    var script = document.createElement('script');
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.dataset.adsCsvAdsense = 'true';
+    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}';
+    document.head.appendChild(script);
+  }
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(loadAdsense, { timeout: 5000 });
+  } else {
+    window.setTimeout(loadAdsense, 3500);
+  }
+})();`;
+
+  return <script dangerouslySetInnerHTML={{ __html: script }} />;
 }

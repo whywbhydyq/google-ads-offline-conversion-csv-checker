@@ -1,26 +1,11 @@
-name: CI
+name: CI Disabled
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install dependencies
-        run: npm install
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Run tests
-        run: npm run test
-      - name: Build
-        run: npm run build
+      - name: Explain disabled automatic CI
+        run: echo "Automatic CI is disabled. Do not run build, test, lint, or typecheck in this workflow."

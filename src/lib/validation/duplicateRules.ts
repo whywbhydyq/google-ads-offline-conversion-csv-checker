@@ -1,6 +1,6 @@
 import type { FieldMapping, ValidationIssue } from "../types";
-import { identifierFields } from "./constants";
-import { firstValue, get, issue } from "./helpers";
+import { get, issue } from "./helpers";
+import { firstUsableIdentifier } from "./identifierHelpers";
 
 export function checkDuplicateConversion(
   row: Record<string, string>,
@@ -9,7 +9,7 @@ export function checkDuplicateConversion(
   conversions: Map<string, number>,
   issues: ValidationIssue[],
 ) {
-  const identifier = firstValue(row, mapping, identifierFields);
+  const identifier = firstUsableIdentifier(row, mapping);
   const conversionName = get(row, mapping.conversion_name);
   const conversionTime = get(row, mapping.conversion_time);
 

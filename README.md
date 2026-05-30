@@ -19,7 +19,7 @@ Set `NEXT_PUBLIC_SITE_URL` to your production domain, e.g., https://ads-csv.ymir
 - `/guide` - guide index
 - `/guide/google-ads-offline-conversion-upload-errors` - upload error guide
 - `/guide/offline-conversion-csv-template-checklist` - CSV template checklist
-- `/guide/enhanced-conversions-for-leads-csv-errors` - enhanced conversions CSV guide
+- `/guide/enhanced-conversions-for-leads-csv-errors` - user-data preflight boundary guide
 
 ## What it checks
 
@@ -30,9 +30,9 @@ Set `NEXT_PUBLIC_SITE_URL` to your production domain, e.g., https://ads-csv.ymir
 - Missing click ID or user-provided identifier data
 - Invalid, future, old, date-only, or timezone-less conversion times
 - Empty or suspicious GCLID / GBRAID / WBRAID rows
-- Plain-text email and phone signals for Enhanced Conversions for Leads
-- Invalid SHA-256 hash-like values
-- Invalid conversion value and currency format
+- Plain-text email, phone, and address-style user-data signals
+- Invalid SHA-256 hash-like values and location-only address rows
+- Invalid conversion value and ISO 4217 currency risks
 - Duplicate conversion and duplicate Order ID risks
 
 ## Privacy boundary
@@ -52,15 +52,16 @@ Tracked events include:
 - `sample_downloaded`
 - `check_completed`
 - `report_downloaded`
+- `workflow_mode_selected`
 
 ## Sample files
 
-Static CSV files are available in `public/samples` for direct download:
+The homepage generates fresh relative-date sample CSV files at runtime so the interactive demo and downloadable samples do not become stale months later.
+
+Current generated samples:
 
 - `valid-click-id-offline-conversions.csv`
-- `invalid-enhanced-conversions-sample.csv`
-
-The homepage also generates fresh relative-date sample data at runtime so the interactive demo and downloadable fresh samples do not become stale months later.
+- `user-data-preflight-risk-sample.csv`
 
 ## Architecture notes
 
@@ -70,6 +71,7 @@ The homepage also generates fresh relative-date sample data at runtime so the in
   - `structureRules.ts`
   - `requiredFieldRules.ts`
   - `timeRules.ts`
+  - `identifierHelpers.ts`
   - `identifierRules.ts`
   - `userDataRules.ts`
   - `valueRules.ts`
@@ -83,17 +85,9 @@ The homepage also generates fresh relative-date sample data at runtime so the in
 - Report CSV cells are escaped to reduce formula injection risk when opened in spreadsheet apps.
 - Issue filtering supports severity, field, and free-text search.
 
-## Testing and CI
+## Validation notes
 
-Vitest covers CSV parsing, report escaping, field detection, and core validation rules.
-
-```bash
-npm run typecheck
-npm run test
-npm run build
-```
-
-GitHub Actions runs install, typecheck, tests, and build on pushes and pull requests to `main`.
+Vitest coverage exists for CSV parsing, report escaping, field detection, and core validation rules, but automatic GitHub CI is disabled. The checked-in workflow is manual and intentionally does not run build, test, lint, or typecheck commands.
 
 ## Tech stack
 
@@ -116,17 +110,13 @@ npm run dev
 
 Open http://localhost:3000.
 
-## Build
+## Local development boundary
 
-```bash
-npm run typecheck
-npm run test
-npm run build
-```
+Use local editing and manual browser review for this project unless a separate verification plan is approved. Build, test, lint, and typecheck commands are intentionally not part of the default workflow.
 
 ## MVP scope
 
-Included: CSV upload, local parsing, field auto-detection, split rule-based validation, results summary, issue table, report download, static and dynamic sample files, Web Worker validation, FAQ, trust pages, SEO guide pages, sitemap, anonymous usage events, and CI tests.
+Included: CSV upload, local parsing, field auto-detection, split rule-based validation, results summary, issue table, report download, dynamic sample files, Web Worker validation, FAQ, trust pages, SEO guide pages, sitemap, anonymous usage events, and manual validation coverage.
 
 Not included in v1: Google Ads API, OAuth login, user accounts, server-side CSV storage, CRM sync, Google Sheets sync, complex spreadsheet editing, or automatic hash/export fix workflow.
 

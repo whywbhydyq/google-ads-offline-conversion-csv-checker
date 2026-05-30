@@ -4,11 +4,12 @@ import type { ChangeEvent } from "react";
 import { useMemo, useState } from "react";
 import { track } from "@vercel/analytics";
 import { downloadTextFile, exportIssuesCsv, parseCsvText } from "@/lib/csv";
-import type { FieldMapping, ParsedCsv, ValidationIssue, ValidationResult } from "@/lib/types";
-import { validateCsv } from "@/lib/validation";
+import type { FieldMapping, ParsedCsv, ValidationIssue, ValidationModeInput, ValidationResult } from "@/lib/types";
+import { getValidationModeCopy, validateCsv } from "@/lib/validation";
 
 type SeverityFilter = "all" | "critical" | "warning" | "info";
 type ValidationSource = "worker" | "main_thread";
+type WorkflowSelection = ValidationModeInput;
 type WorkerResponse =
   | { id: string; ok: true; parsed: ParsedCsv; result: ValidationResult }
   | { id: string; ok: false; error: string };
@@ -63,13 +64,13 @@ function dateOnlyFromNow(days: number) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function validateCsvText(text: string): { parsed: ParsedCsv; result: ValidationResult; source: ValidationSource } {
+function validateCsvText(text: string, mode: WorkflowSelection): { parsed: ParsedCsv; result: ValidationResult; source: ValidationSource } {
   const parsed = parseCsvText(text);
-  return { parsed, result: validateCsv(parsed), source: "main_thread" };
+  return { parsed, result: validateCsv(parsed, mode), source: "main_thread" };
 }
 
-function validateCsvTextInWorker(text: string): Promise<{ parsed: ParsedCsv; result: ValidationResult; source: ValidationSource }> {
-  if (typeof Worker === "undefined") return Promise.resolve(validateCsvText(text));
+function validateCsvTextInWorker(text: string, mode: WorkflowSelection): Promise<{ parsed: ParsedCsv; result: ValidationResult; source: ValidationSource }> {
+  if (typeof Worker === "undefined") return Promise.resolve(validateCsvText(text, mode));
 
   return new Promise((resolve, reject) => {
     const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -97,20 +98,20 @@ function validateCsvTextInWorker(text: string): Promise<{ parsed: ParsedCsv; res
       reject(new Error("CSV worker failed."));
     };
 
-    worker.postMessage({ id, text });
+    worker.postMessage({ id, text, mode });
   });
 }
 
-async function validateUploadedFile(file: File) {
+async function validateUploadedFile(file: File, mode: WorkflowSelection) {
   if (!file.name.toLowerCase().endsWith(".csv")) throw new Error("Please upload a CSV file.");
   if (file.size === 0) throw new Error("This file appears to be empty.");
   if (file.size > MAX_FILE_SIZE_BYTES) throw new Error("This file is too large for the browser checker. Try a smaller file.");
 
   const text = await file.text();
   try {
-    return await validateCsvTextInWorker(text);
+    return { ...(await validateCsvTextInWorker(text, mode)), text };
   } catch {
-    return validateCsvText(text);
+    return { ...validateCsvText(text, mode), text };
   }
 }
 
@@ -118,7 +119,7 @@ const sampleLoaders = [
   {
     label: "Try valid click ID CSV",
     fileName: "valid-click-id-offline-conversions.csv",
-    staticPath: "/samples/valid-click-id-offline-conversions.csv",
+    mode: "click_id_upload" as const,
     csv: () => [
       "Google Click ID,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Order ID",
       `EAIaIQobChMIvalidGclid01,Qualified lead,${dateTimeFromNow(-2)},125.50,USD,ORDER-1001`,
@@ -127,17 +128,17 @@ const sampleLoaders = [
     ].join("\n"),
   },
   {
-    label: "Try invalid enhanced conversions CSV",
-    fileName: "invalid-enhanced-conversions-sample.csv",
-    staticPath: "/samples/invalid-enhanced-conversions-sample.csv",
+    label: "Try user-data preflight risk CSV",
+    fileName: "user-data-preflight-risk-sample.csv",
+    mode: "user_data_preflight" as const,
     csv: () => [
-      "Email,Phone,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Order ID",
-      `bad-email,callme,Qualified lead,${dateTimeFromNow(1, false)},abc,US,ORDER-2001`,
-      `jane@example.com,+14155552671,,${dateOnlyFromNow(-120)},99.00,USD,ORDER-2002`,
-      "abcdef1234567890abcdef1234567890,+442071838750,Purchase,not a date,-10,GBP,ORDER-2002",
-      `, ,Purchase,${dateTimeFromNow(-1)},50,SGD,ORDER-2004`,
-      `jane@example.com,+14155552671,Qualified lead,${dateOnlyFromNow(-120)},99.00,USD,ORDER-2005`,
-      `jane@example.com,+14155552671,Qualified lead,${dateOnlyFromNow(-120)},99.00,USD,ORDER-2006`,
+      "Email,Phone,Conversion Name,Conversion Time,Conversion Value,Conversion Currency,Order ID,Ad User Data,Ad Personalization",
+      `bad-email,callme,Qualified lead,${dateTimeFromNow(1, false)},abc,US,ORDER-2001,Maybe,Granted`,
+      `jane@example.com,+14155552671,,${dateOnlyFromNow(-120)},99.00,USD,ORDER-2002,Granted,Denied`,
+      "abcdef1234567890abcdef1234567890,+442071838750,Purchase,not a date,-10,GBP,ORDER-2002,Granted,Granted",
+      `, ,Purchase,${dateTimeFromNow(-1)},50,SGD,ORDER-2004,Denied,Denied`,
+      `jane@example.com,+14155552671,Qualified lead,${dateOnlyFromNow(-120)},99.00,USD,ORDER-2005,Granted,Granted`,
+      `jane@example.com,+14155552671,Qualified lead,${dateOnlyFromNow(-120)},99.00,USD,ORDER-2006,Granted,Granted`,
     ].join("\n"),
   },
 ];
@@ -151,6 +152,8 @@ export function CheckerApp() {
   const [fieldFilter, setFieldFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [isChecking, setIsChecking] = useState(false);
+  const [workflowMode, setWorkflowMode] = useState<WorkflowSelection>("auto");
+  const [lastCsvText, setLastCsvText] = useState("");
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -160,7 +163,8 @@ export function CheckerApp() {
     setIsChecking(true);
     track("file_selected", { size_bucket: bucketCount(file.size) });
     try {
-      const { parsed: parsedCsv, result: validationResult, source } = await validateUploadedFile(file);
+      const { parsed: parsedCsv, result: validationResult, source, text } = await validateUploadedFile(file, workflowMode);
+      setLastCsvText(text);
       setParsed(parsedCsv);
       setResult(validationResult);
       setSeverityFilter("all");
@@ -175,9 +179,12 @@ export function CheckerApp() {
         critical_count_bucket: bucketCount(counts.critical),
         warning_count_bucket: bucketCount(counts.warning),
         risk_status: validationResult.riskStatus,
+        workflow_mode: validationResult.mode,
+        requested_workflow_mode: workflowMode,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong while parsing this CSV.";
+      setLastCsvText("");
       setParsed(null);
       setResult(null);
       setError(message);
@@ -193,12 +200,15 @@ export function CheckerApp() {
 
   function loadSample(sample: (typeof sampleLoaders)[number]) {
     setFileName(sample.fileName);
+    setWorkflowMode(sample.mode);
     setError("");
     setIsChecking(true);
-    track("sample_loaded", { sample: sample.fileName });
+    track("sample_loaded", { sample: sample.fileName, requested_workflow_mode: sample.mode });
     try {
-      const parsedCsv = parseCsvText(sample.csv());
-      const validationResult = validateCsv(parsedCsv);
+      const csvText = sample.csv();
+      const parsedCsv = parseCsvText(csvText);
+      const validationResult = validateCsv(parsedCsv, sample.mode);
+      setLastCsvText(csvText);
       setParsed(parsedCsv);
       setResult(validationResult);
       setSeverityFilter("all");
@@ -213,9 +223,12 @@ export function CheckerApp() {
         critical_count_bucket: bucketCount(counts.critical),
         warning_count_bucket: bucketCount(counts.warning),
         risk_status: validationResult.riskStatus,
+        workflow_mode: validationResult.mode,
+        requested_workflow_mode: sample.mode,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not load the sample CSV.";
+      setLastCsvText("");
       setParsed(null);
       setResult(null);
       setError(message);
@@ -223,6 +236,48 @@ export function CheckerApp() {
         source: "sample",
         reason: parseFailureReason(message),
         size_bucket: "sample",
+      });
+    } finally {
+      setIsChecking(false);
+    }
+  }
+
+  async function updateWorkflowMode(value: WorkflowSelection) {
+    setWorkflowMode(value);
+    setError("");
+    setSeverityFilter("all");
+    setFieldFilter("all");
+    setQuery("");
+    track("workflow_mode_selected", { requested_workflow_mode: value });
+
+    if (!lastCsvText) return;
+
+    setIsChecking(true);
+    try {
+      const { parsed: parsedCsv, result: validationResult, source } = await validateCsvTextInWorker(lastCsvText, value);
+      setParsed(parsedCsv);
+      setResult(validationResult);
+      const counts = getIssueCounts(validationResult);
+      track("check_completed", {
+        source: "workflow_change",
+        processing_mode: source,
+        row_count_bucket: bucketCount(parsedCsv.rawRowCount),
+        issue_count_bucket: bucketCount(validationResult.issues.length),
+        critical_count_bucket: bucketCount(counts.critical),
+        warning_count_bucket: bucketCount(counts.warning),
+        risk_status: validationResult.riskStatus,
+        workflow_mode: validationResult.mode,
+        requested_workflow_mode: value,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not re-check this CSV with the selected workflow.";
+      setParsed(null);
+      setResult(null);
+      setError(message);
+      track("parse_failed", {
+        source: "workflow_change",
+        reason: parseFailureReason(message),
+        size_bucket: bucketCount(lastCsvText.length),
       });
     } finally {
       setIsChecking(false);
@@ -267,6 +322,8 @@ export function CheckerApp() {
   }, [fieldFilter, query, result, severityFilter]);
 
   const visibleIssues = filteredIssues.slice(0, DISPLAY_LIMIT);
+  const modeCopy = result ? getValidationModeCopy(result.mode) : null;
+  const previewCounts = result ? getIssueCounts(result) : null;
 
   function downloadReport() {
     if (!result) return;
@@ -284,26 +341,67 @@ export function CheckerApp() {
         <div>
           <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Independent local CSV preflight checker</p>
           <h1 id="checker-title" className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to validate required columns, conversion time format, GCLID, GBRAID, WBRAID, conversion value, currency, user data, duplicate rows, and common Google Ads import errors before previewing the file.</p>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to check headers, conversion time formats, GCLID, GBRAID, WBRAID, user-data hash risks, consent fields, conversion value, currency, duplicate rows, and common Google Ads import risks before previewing the file.</p>
           <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">Browser-local processing: your CSV is not uploaded to our server. This independent tool focuses on CSV-level checks and does not verify Google Ads account settings, conversion ownership, or final import results.</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft" aria-labelledby="upload-title">
-          <h2 id="upload-title" className="sr-only">Upload a CSV for a local preflight check</h2>
-          <label htmlFor="csv-upload" className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition hover:border-blue-400 hover:bg-blue-50">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="upload-title" className="text-xl font-bold text-slate-950">Upload and preview CSV risk</h2>
+              <p className="mt-1 text-sm text-slate-600">CSV only · up to 10MB · browser-local validation.</p>
+            </div>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Local only</span>
+          </div>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <label htmlFor="workflow-mode" className="text-sm font-semibold text-slate-950">Workflow to check</label>
+            <select id="workflow-mode" value={workflowMode} onChange={(event) => updateWorkflowMode(event.target.value as WorkflowSelection)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none ring-blue-500 focus:ring-2">
+              <option value="auto">Auto-detect from headers</option>
+              <option value="click_id_upload">Click ID upload: GCLID / GBRAID / WBRAID</option>
+              <option value="user_data_preflight">User-data / Data Manager preflight</option>
+              <option value="user_data_scheduled_prehashed">Scheduled/pre-hashed user-data upload</option>
+              <option value="user_data_manual_unhashed">Manual unhashed user-data review</option>
+            </select>
+            <p className="mt-2 text-xs leading-5 text-slate-500">Use an explicit workflow when your headers include both click IDs and user-provided data, or when hashing requirements differ between scheduled/pre-hashed and manual unhashed review.</p>
+          </div>
+          <label htmlFor="csv-upload" className="mt-5 flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-9 text-center transition hover:border-blue-400 hover:bg-blue-50">
             <span className="text-lg font-semibold text-slate-950">Check CSV File Locally</span>
-            <span className="mt-2 text-sm text-slate-600">CSV only · up to 10MB · processed in a browser worker when possible</span>
+            <span className="mt-2 text-sm text-slate-600">Detect workflow, file-level timezone, fields, row-level issues, and reportable fixes</span>
             <input id="csv-upload" type="file" accept=".csv,text/csv" onChange={handleFileChange} className="sr-only" aria-describedby="csv-upload-privacy" />
           </label>
           <p id="csv-upload-privacy" className="mt-3 text-center text-xs text-slate-500">No Google Ads login required. Your file stays in your browser.</p>
           <div className="mt-5 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => loadSample(sample)} className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">{sample.label}</button>)}</div>
           <div className="mt-4 rounded-2xl bg-slate-50 p-4">
             <p className="text-sm font-semibold text-slate-700">Download fresh sample CSV files</p>
-            <p className="mt-1 text-xs text-slate-500">These downloads are generated with relative dates so the examples stay useful over time.</p>
-            <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.staticPath} onClick={() => downloadSample(sample)} className="text-left text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</button>)}</div>
+            <p className="mt-1 text-xs text-slate-500">Generated with relative dates so examples stay useful over time.</p>
+            <div className="mt-3 flex flex-wrap gap-3">{sampleLoaders.map((sample) => <button key={sample.fileName} onClick={() => downloadSample(sample)} className="text-left text-sm font-medium text-blue-700 hover:text-blue-900">{sample.fileName}</button>)}</div>
           </div>
-          {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, and running validation rules in a browser worker when possible.</div>}
+          {isChecking && <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">Checking your CSV locally… parsing rows, detecting fields, applying the selected workflow, and running validation rules in a browser worker when possible.</div>}
           {error && <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-          {parsed && result && <FileSnapshot fileName={fileName} parsed={parsed} mapping={result.mapping} />}
+          {!parsed && !result && !isChecking && !error && (
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-950">Preview will appear after validation.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">The first result card will show the selected or inferred workflow, critical issues, warning count, rows without detected critical issues, and the report download action.</p>
+            </div>
+          )}
+          {parsed && result && modeCopy && previewCounts && (
+            <div className="mt-5 rounded-2xl bg-slate-950 p-5 text-white">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-blue-200">{fileName}</p>
+                  <p className="mt-1 text-xs text-slate-400">{modeCopy.label}</p>
+                </div>
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white">{result.riskStatus}</span>
+              </div>
+              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                <div><dt className="text-slate-400">Rows</dt><dd className="mt-1 text-xl font-bold">{parsed.rawRowCount.toLocaleString()}</dd></div>
+                <div><dt className="text-slate-400">Critical</dt><dd className="mt-1 text-xl font-bold">{previewCounts.critical}</dd></div>
+                <div><dt className="text-slate-400">Warnings</dt><dd className="mt-1 text-xl font-bold">{previewCounts.warning}</dd></div>
+                <div><dt className="text-slate-400">Mapped</dt><dd className="mt-1 text-xl font-bold">{Object.keys(result.mapping).length}</dd></div>
+              </dl>
+              <p className="mt-4 text-xs leading-5 text-slate-300">{modeCopy.description} Final acceptance still requires Google Ads preview/import validation.</p>
+              <button onClick={downloadReport} className="mt-4 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-blue-50">Download row-level fix report</button>
+            </div>
+          )}
         </div>
       </div>
       {parsed && result && (
@@ -325,19 +423,25 @@ export function CheckerApp() {
           </div>
         </section>
       )}
-      <section className="mt-14 grid gap-4 md:grid-cols-3" aria-label="Common CSV risks this checker detects">{["Missing headers and duplicated columns", "Invalid, future, date-only, or old conversion times", "Plain-text email, suspicious phone, and SHA-256 hash issues", "Empty click ID or user identifiers", "Invalid value and currency formatting", "Duplicate conversion and Order ID risks"].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">{item}</div>)}</section>
+      <section className="mt-14 grid gap-4 md:grid-cols-3" aria-label="Common CSV risks this checker detects">{["Missing headers and duplicated columns", "Invalid, future, date-only, or old conversion times", "Plain-text email, suspicious phone, address hash, and SHA-256 issues", "Empty click ID or user identifiers", "Consent field and user-data hashing risks", "Invalid ISO currency and value formatting", "Duplicate conversion and Order ID risks"].map((item) => <div key={item} className="rounded-2xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">{item}</div>)}</section>
     </section>
   );
 }
 
-function FileSnapshot({ fileName, parsed, mapping }: { fileName: string; parsed: ParsedCsv; mapping: FieldMapping }) {
-  return <div className="mt-5 rounded-2xl bg-slate-950 p-5 text-white"><p className="text-sm font-semibold text-blue-200">{fileName}</p><dl className="mt-4 grid grid-cols-3 gap-3 text-sm"><div><dt className="text-slate-400">Rows</dt><dd className="mt-1 text-xl font-bold">{parsed.rawRowCount.toLocaleString()}</dd></div><div><dt className="text-slate-400">Columns</dt><dd className="mt-1 text-xl font-bold">{parsed.headers.length}</dd></div><div><dt className="text-slate-400">Mapped</dt><dd className="mt-1 text-xl font-bold">{Object.keys(mapping).length}</dd></div></dl></div>;
-}
 
 function ResultsSummary({ parsed, result }: { parsed: ParsedCsv; result: ValidationResult }) {
   const { critical, warning, info } = getIssueCounts(result);
-  const cards = [{ label: "Total rows", value: parsed.rawRowCount.toLocaleString() }, { label: "Critical", value: critical.toString() }, { label: "Warnings", value: warning.toString() }, { label: "Info", value: info.toString() }, { label: "Ready rows", value: result.readyRows.toLocaleString() }, { label: "Risk status", value: result.riskStatus }];
-  return <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">{cards.map((card) => <div key={card.label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{card.label}</p><p className="mt-2 text-2xl font-bold text-slate-950">{card.value}</p></div>)}</div>;
+  const modeCopy = getValidationModeCopy(result.mode);
+  const cards = [
+    { label: "Workflow", value: modeCopy.shortLabel },
+    { label: "Total rows", value: parsed.rawRowCount.toLocaleString() },
+    { label: "Critical", value: critical.toString() },
+    { label: "Warnings", value: warning.toString() },
+    { label: "Info", value: info.toString() },
+    { label: "Rows without detected critical issues", value: result.readyRows.toLocaleString() },
+    { label: "Risk status", value: result.riskStatus },
+  ];
+  return <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">{cards.map((card) => <div key={card.label} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{card.label}</p><p className="mt-2 text-2xl font-bold text-slate-950">{card.value}</p></div>)}</div>;
 }
 
 function ResultInterpretation({ result }: { result: ValidationResult }) {

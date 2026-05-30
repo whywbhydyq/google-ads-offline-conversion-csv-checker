@@ -1,8 +1,9 @@
 import Papa from "papaparse";
-import type { ParsedCsv, ValidationIssue } from "./types";
+import type { CsvParameter, ParsedCsv, ValidationIssue } from "./types";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const DANGEROUS_CSV_PREFIX = /^[=+\-@\t\r]/;
+const PARAMETER_ROW_PATTERN = /^parameters?\s*:\s*([^=]+?)\s*=\s*(.+)$/i;
 
 export async function parseCsvFile(file: File): Promise<ParsedCsv> {
   if (!file.name.toLowerCase().endsWith(".csv")) throw new Error("Please upload a CSV file.");
@@ -25,22 +26,70 @@ export function parseCsvText(text: string): ParsedCsv {
     );
   }
 
-  const rawRows = result.data.filter((row) => row.some((cell) => String(cell ?? "").trim()));
-  if (!rawRows.length) throw new Error("This file appears to be empty.");
+  const parsedRows = result.data
+    .map((row, index) => ({ cells: row.map((cell) => String(cell ?? "")), rowNumber: index + 1 }))
+    .filter(({ cells }) => cells.some((cell) => cell.trim()));
 
-  const headers = (rawRows[0] ?? []).map((h) => String(h ?? "").trim());
+  if (!parsedRows.length) throw new Error("This file appears to be empty.");
+
+  const parameters: Record<string, string> = {};
+  const parameterRows: CsvParameter[] = [];
+  let headerIndex = 0;
+
+  while (headerIndex < parsedRows.length) {
+    const parameter = parseParameterRow(parsedRows[headerIndex].cells, parsedRows[headerIndex].rowNumber);
+    if (!parameter) break;
+    parameters[normalizeParameterName(parameter.name)] = parameter.value;
+    parameterRows.push(parameter);
+    headerIndex += 1;
+  }
+
+  const tableRows = parsedRows.slice(headerIndex);
+  if (!tableRows.length) throw new Error("No header row detected after Google Ads parameter rows.");
+
+  const headers = (tableRows[0]?.cells ?? []).map((h) => h.trim());
   if (!headers.length || headers.every((h) => !h)) throw new Error("No header row detected.");
 
   const rowKeys = makeRowKeys(headers);
-  const rows = rawRows.slice(1).map((row) => {
+  const dataRows = tableRows.slice(1);
+  const rows = dataRows.map(({ cells }) => {
     const record: Record<string, string> = {};
     rowKeys.forEach((header, index) => {
-      record[header] = String(row[index] ?? "").trim();
+      record[header] = String(cells[index] ?? "").trim();
     });
     return record;
   });
 
-  return { headers, rows, rawRows, rawRowCount: rows.length };
+  return {
+    headers,
+    rows,
+    rawRows: tableRows.map(({ cells }) => cells),
+    rawRowCount: rows.length,
+    rowNumbers: dataRows.map(({ rowNumber }) => rowNumber),
+    headerRowNumber: tableRows[0].rowNumber,
+    parameters,
+    parameterRows,
+  };
+}
+
+function parseParameterRow(cells: string[], rowNumber: number): CsvParameter | null {
+  const firstCell = (cells[0] ?? "").trim();
+  if (!firstCell) return null;
+  if (cells.slice(1).some((cell) => cell.trim())) return null;
+
+  const match = firstCell.match(PARAMETER_ROW_PATTERN);
+  if (!match) return null;
+
+  return {
+    name: match[1].trim(),
+    value: match[2].trim(),
+    raw: firstCell,
+    rowNumber,
+  };
+}
+
+function normalizeParameterName(name: string) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
 function makeRowKeys(headers: string[]) {
@@ -86,5 +135,5 @@ export function downloadTextFile(filename: string, content: string, mimeType: st
   anchor.href = url;
   anchor.download = filename;
   anchor.click();
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }

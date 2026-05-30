@@ -9,7 +9,8 @@ const supportedColumns = [
   "Conversion Value",
   "Conversion Currency",
   "Order ID",
-  "Email and phone user-provided data",
+  "Email, phone, and address-style user data",
+  "Ad User Data and Ad Personalization consent fields",
   "SHA-256 hash-like user data fields",
 ];
 
@@ -17,11 +18,12 @@ const detectedChecks = [
   "Missing, blank, or duplicated headers",
   "Broken row structure caused by commas or quotes",
   "Missing conversion names or conversion times",
-  "Future, old, date-only, timezone-less, or unparseable conversion times",
+  "Future, old, date-only, timezone-less, timezone-ID, or unparseable conversion times",
   "Missing click IDs or user identifiers",
-  "Plain-text email and suspicious phone values for enhanced conversions review",
+  "GCLID, GBRAID, WBRAID, and mixed-identifier workflow risks",
+  "Plain-text email, phone, name, and street address risks for user-data review",
   "Invalid SHA-256 hash-like values",
-  "Invalid conversion value or three-letter currency format",
+  "Invalid consent values and ISO 4217 currency risks",
   "Duplicate conversion and Order ID risks",
 ];
 
@@ -51,7 +53,7 @@ const faqPreview = [
   },
   {
     question: "Does it support enhanced conversions for leads?",
-    answer: "It can flag common CSV-level user data risks such as plain-text emails, suspicious phone values, missing identifiers, and broken SHA-256 hash-like values. Always verify the upload method and template required by your Google Ads workflow.",
+    answer: "It can flag CSV-level user-data risks such as plain-text emails, suspicious phone values, address hashing issues, missing identifiers, invalid consent values, and broken SHA-256 hash-like values. It does not replace Google Ads Data Manager or final Google Ads preview validation.",
   },
 ];
 
@@ -141,7 +143,7 @@ function StaticSeoContent() {
           Check common Google Ads offline conversion CSV problems before upload
         </h2>
         <p className="mt-4 max-w-4xl text-base leading-8 text-slate-700">
-          This free checker is designed for advertisers, PPC operators, agencies, and local service teams that prepare offline conversion imports. It focuses on CSV-level risks that are easier to catch before opening Google Ads: missing columns, malformed rows, invalid conversion timestamps, weak identifiers, duplicate conversion records, and user data formatting issues.
+          This free checker is designed for advertisers, PPC operators, agencies, and local service teams that prepare offline conversion imports. It focuses on CSV-level risks that are easier to catch before opening Google Ads: missing columns, malformed rows, invalid conversion timestamps, weak identifiers, duplicate conversion records, consent values, ISO currency issues, and user data formatting issues.
         </p>
       </div>
 
@@ -164,7 +166,7 @@ function StaticSeoContent() {
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="supported-columns">
           <h2 id="supported-columns" className="text-2xl font-bold text-slate-950">Supported columns</h2>
           <p className="mt-3 leading-7 text-slate-700">
-            The tool auto-detects common Google Ads offline conversion and enhanced conversion CSV fields. Column names do not have to be perfect, but recognizable headers make the report more useful.
+            The tool auto-detects common Google Ads offline conversion, click-ID upload, and user-data preflight fields. Column names do not have to be perfect, but recognizable headers make the report more useful.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {supportedColumns.map((column) => (

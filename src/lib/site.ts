@@ -4,7 +4,7 @@ export const siteUrl =
 export const siteName = "Google Ads Offline Conversion CSV Checker";
 
 export const defaultTitle =
-  "Google Ads Offline Conversion CSV Checker";
+  "Free Google Ads Offline Conversion CSV Checker | Local Upload Error Preflight";
 
 export const defaultDescription =
-  "Check Google Ads offline conversion CSV files locally before upload. Validate required columns, conversion time, GCLID, GBRAID, WBRAID, currency, and common import errors.";
+  "Check CSV-level Google Ads offline conversion upload risks locally before preview: headers, time formats, click IDs, consent fields, user-data hash risks, duplicates, value, and currency.";

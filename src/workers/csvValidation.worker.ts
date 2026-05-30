@@ -1,10 +1,11 @@
 import { parseCsvText } from "@/lib/csv";
 import { validateCsv } from "@/lib/validation";
-import type { ParsedCsv, ValidationResult } from "@/lib/types";
+import type { ParsedCsv, ValidationModeInput, ValidationResult } from "@/lib/types";
 
 type WorkerRequest = {
   id: string;
   text: string;
+  mode: ValidationModeInput;
 };
 
 type WorkerSuccess = {
@@ -21,17 +22,21 @@ type WorkerFailure = {
 };
 
 self.onmessage = (event: MessageEvent<WorkerRequest>) => {
-  const { id, text } = event.data;
+  const { id, text, mode } = event.data;
 
   try {
     const parsedCsv = parseCsvText(text);
-    const validationResult = validateCsv(parsedCsv);
+    const validationResult = validateCsv(parsedCsv, mode);
 
     const lightweightParsed: ParsedCsv = {
       headers: parsedCsv.headers,
       rawRowCount: parsedCsv.rawRowCount,
       rows: [],
       rawRows: [],
+      rowNumbers: [],
+      headerRowNumber: parsedCsv.headerRowNumber,
+      parameters: parsedCsv.parameters,
+      parameterRows: parsedCsv.parameterRows,
     };
 
     self.postMessage({ id, ok: true, parsed: lightweightParsed, result: validationResult } satisfies WorkerSuccess);
