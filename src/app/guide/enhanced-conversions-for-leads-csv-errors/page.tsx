@@ -26,11 +26,11 @@ const sections = [
   },
   {
     title: "Manual unhashed review",
-    body: "Some manual workflows may allow plain values to be hashed during upload, but the values still need valid formatting. Invalid email or phone values should be fixed before preview.",
+    body: "Some official manual review workflows may accept unhashed values, but this checker cannot confirm which account workflow will hash them. Plain values still need valid formatting, and invalid email or phone values should be fixed before Google Ads preview.",
   },
   {
     title: "Broken SHA-256 hashes",
-    body: "A SHA-256 hex digest should be 64 hexadecimal characters. Short hash-like strings are often caused by truncation, wrong hashing code, or exporting the wrong CRM field.",
+    body: "A SHA-256 hex digest should be 64 hexadecimal characters. Short hash-like strings are often caused by truncation, wrong hashing code, missing normalization, or exporting the wrong CRM field.",
   },
   {
     title: "Address-style user data",
@@ -78,7 +78,7 @@ export default function EnhancedConversionsGuidePage() {
       <section className="mt-8 rounded-3xl border border-amber-200 bg-amber-50 p-6" aria-labelledby="hard-boundary">
         <h2 id="hard-boundary" className="text-2xl font-bold text-slate-950">Important boundary</h2>
         <p className="mt-3 leading-7 text-slate-700">
-          Use the official Google Ads / Data Manager workflow for enhanced conversions for leads setup and final validation. This checker can only flag local CSV-level symptoms such as invalid email, suspicious phone values, plain pre-hashed fields, incomplete address data, missing identifiers, consent value issues, duplicate rows, and conversion-time risks.
+          Use the official Google Ads, Data Manager, Google Ads API, or other supported workflow for enhanced conversions for leads setup and final validation. This checker can only flag local CSV-level symptoms such as invalid email, suspicious phone values, plain pre-hashed fields, incomplete address data, missing identifiers, consent value issues, duplicate rows, and conversion-time risks.
         </p>
       </section>
 
@@ -92,7 +92,7 @@ export default function EnhancedConversionsGuidePage() {
       </div>
 
       <LocalValidationBoundary />
-      <OfficialSources sources={[officialSources.googleAdsDataManager, officialSources.googleAdsApiOffline, officialSources.googleAdsEnhancedWeb, officialSources.googleAdsFileImport]} />
+      <OfficialSources sources={[officialSources.googleAdsDataManager, officialSources.googleAdsImportGuidelines, officialSources.googleAdsApiOffline, officialSources.googleAdsEclDiagnostics, officialSources.googleAdsFileImport]} />
 
       <div className="mt-8 rounded-3xl border border-blue-200 bg-blue-50 p-6">
         <h2 className="text-2xl font-bold text-slate-950">Check before upload</h2>

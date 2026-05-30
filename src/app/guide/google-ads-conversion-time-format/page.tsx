@@ -19,6 +19,7 @@ const acceptedExamples = [
   ["Parameters:TimeZone=America/Chicago", "File-level timezone parameter. Use when rows omit timezone values and the whole file uses one timezone."],
   ["Parameters:TimeZone=-0500", "File-level GMT offset parameter. Timezone IDs are usually safer around daylight saving changes."],
   ["05/22/2026 14:30:00 -0500", "Numeric date and time with a GMT offset."],
+  ["05/22/2026 02:30:00 PM", "US-style date with 12-hour time. Add a file-level timezone if rows do not carry their own offset."],
   ["2026-05-22 14:30:00+0800", "ISO-style date and time with a compact numeric offset."],
   ["2026-05-22T14:30:00 America/Los_Angeles", "ISO-style date and time with an IANA timezone ID."],
 ];
@@ -99,7 +100,7 @@ export default function GuidePage() {
       </section>
 
       <LocalValidationBoundary />
-      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsApiOffline]} />
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsImportGuidelines, officialSources.googleAdsApiOffline]} />
 
       <div className="mt-10 rounded-3xl border border-blue-200 bg-blue-50 p-6">
         <h2 className="text-2xl font-bold text-slate-950">Check conversion times locally</h2>

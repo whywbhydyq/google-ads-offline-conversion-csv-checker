@@ -22,7 +22,7 @@ const sections = [
   },
   {
     title: "Use exactly one click ID in API-style click conversion rows",
-    body: "For API-style click conversion uploads, each row should provide exactly one of GCLID, GBRAID, or WBRAID. If the same row contains multiple click IDs, the checker treats that as a blocker in click-ID workflow mode.",
+    body: "For the click-conversion workflow this checker models, each row should provide exactly one of GCLID, GBRAID, or WBRAID. If the same row contains multiple click IDs, the checker treats that as a blocker in click-ID workflow mode. Confirm edge cases in the official Google Ads workflow or API documentation before changing production imports.",
   },
   {
     title: "Keep GCLID, GBRAID, and WBRAID in separate columns",
@@ -79,7 +79,7 @@ export default function GuidePage() {
         ))}
       </div>
       <LocalValidationBoundary />
-      <OfficialSources sources={[officialSources.googleAdsApiClickSample, officialSources.googleAdsFileImport]} />
+      <OfficialSources sources={[officialSources.googleAdsApiClickSample, officialSources.googleAdsApiTroubleshooting, officialSources.googleAdsFileImport, officialSources.googleAdsImportGuidelines]} />
       <div className="mt-10 rounded-3xl border border-blue-200 bg-blue-50 p-6">
         <h2 className="text-2xl font-bold text-slate-950">Check identifier fields before import</h2>
         <p className="mt-3 leading-7 text-slate-700">Use the local CSV checker to find missing click IDs, malformed click IDs, duplicate conversion records, mixed identifiers, and Order ID risks before previewing the upload in Google Ads.</p>

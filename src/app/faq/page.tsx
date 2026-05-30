@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/JsonLd";
+import { LastUpdated, OfficialSources, officialSources } from "@/components/GuideSupportBlocks";
 import { siteName, siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ const faqs = [
   },
   {
     question: "Does it support Enhanced Conversions for Leads?",
-    answer: "It supports local CSV-level checks for user-provided data risks, such as invalid email format, suspicious phone values, plain-text values in pre-hashed workflows, incomplete address data, consent values, and invalid SHA-256 hash-like values. It is not a Google Ads Data Manager schema validator and does not verify final matching.",
+    answer: "It supports local CSV-level checks for user-provided data risks, such as invalid email format, suspicious phone values, plain-text values in pre-hashed workflows, incomplete address data, consent values, and invalid SHA-256 hash-like values. It is not a Google Ads Data Manager schema validator, account setup checker, or final matching validator.",
   },
   {
     question: "Can it fix my CSV automatically?",
@@ -33,7 +34,11 @@ const faqs = [
   },
   {
     question: "What file types are supported?",
-    answer: "The MVP supports UTF-8 CSV files with a header row, comma delimiter, and a suggested maximum size of 10MB. XLSX files and Google Sheets URLs are not supported in v1.",
+    answer: "The MVP supports UTF-8 CSV files with a header row, comma delimiter, and a 10MB browser-side file limit. Google Ads supports additional template formats, but XLSX files and Google Sheets URLs are not supported in this checker.",
+  },
+  {
+    question: "Should I create new long-tail pages for every upload problem?",
+    answer: "No. New URLs should wait for Search Console or Bing Webmaster Tools evidence that a distinct query has repeated impressions and cannot be served by the existing checker or guide pages.",
   },
 ];
 
@@ -86,6 +91,7 @@ export default function FaqPage() {
       <p className="mt-4 text-lg leading-8 text-slate-700">
         Common questions about privacy, independence, scope, supported files, and what this Google Ads offline conversion CSV checker can and cannot verify.
       </p>
+      <LastUpdated />
       <div className="mt-8 space-y-4">
         {faqs.map((faq) => (
           <section key={faq.question} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -94,6 +100,7 @@ export default function FaqPage() {
           </section>
         ))}
       </div>
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsImportGuidelines, officialSources.googleAdsDataManager, officialSources.googleAdsBulkTemplates]} />
     </main>
   );
 }

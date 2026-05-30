@@ -59,7 +59,7 @@ export default function TemplateChecklistPage() {
       <JsonLd data={checklistJsonLd} />
       <a href="/guide" className="text-sm font-semibold text-blue-700 hover:text-blue-900">Back to guides</a>
       <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950 md:text-5xl">{pageTitle}</h1>
-      <p className="mt-5 text-lg leading-8 text-slate-700">Use this checklist before uploading an offline conversion CSV to Google Ads preview.</p>
+      <p className="mt-5 text-lg leading-8 text-slate-700">Use this checklist before uploading an offline conversion CSV to Google Ads preview. Google Ads supports additional template formats, but this local checker only validates CSV files.</p>
       <LastUpdated />
 
       <section className="mt-8 rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm" aria-labelledby="workflow-checklist">
@@ -85,7 +85,7 @@ export default function TemplateChecklistPage() {
       </section>
 
       <LocalValidationBoundary />
-      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsApiClickSample, officialSources.googleAdsDataManager]} />
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsBulkTemplates, officialSources.googleAdsApiClickSample, officialSources.googleAdsDataManager, officialSources.googleAdsImportGuidelines]} />
       <a href="/" className="mt-8 inline-flex rounded-full bg-blue-700 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-800">Check a CSV</a>
     </main>
   );

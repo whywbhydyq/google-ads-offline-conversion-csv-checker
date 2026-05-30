@@ -19,7 +19,7 @@ const detectedChecks = [
   "Missing, blank, or duplicated headers",
   "Broken row structure caused by commas or quotes",
   "Missing conversion names or conversion times",
-  "Future, old, date-only, timezone-less, timezone-ID, or unparseable conversion times",
+  "Future, old, date-only, timezone-less, invalid timezone-ID, or unparseable conversion times",
   "Missing click IDs or user identifiers",
   "GCLID, GBRAID, WBRAID, and mixed-identifier workflow risks",
   "Plain-text email, phone, name, and street address risks for user-data review",
@@ -195,11 +195,11 @@ function StaticSeoContent() {
       <section className="mt-8 rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm" aria-labelledby="what-it-cannot-verify">
         <h2 id="what-it-cannot-verify" className="text-2xl font-bold text-slate-950">What it cannot verify</h2>
         <p className="mt-3 leading-7 text-amber-950">
-          This checker does not connect to Google Ads, does not use OAuth, and does not call the Google Ads API. It cannot verify conversion action ownership, account-level settings, click ownership, MCC permissions, customer data terms, import preview status, or final attribution. Treat it as a local CSV smoke test, then preview the corrected file in Google Ads before applying the upload.
+          This checker does not connect to Google Ads, does not use OAuth, and does not call the Google Ads API. It cannot verify conversion action ownership, account-level settings, click ownership, MCC permissions, customer data terms, Data Manager schema rules, import preview status, or final attribution. Treat it as a local CSV smoke test, then preview the corrected file in Google Ads before applying the upload.
         </p>
       </section>
 
-      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsApiClickSample, officialSources.googleAdsDataManager]} />
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsImportGuidelines, officialSources.googleAdsApiClickSample, officialSources.googleAdsDataManager, officialSources.googleAdsBulkTemplates]} />
 
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="faq-preview">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

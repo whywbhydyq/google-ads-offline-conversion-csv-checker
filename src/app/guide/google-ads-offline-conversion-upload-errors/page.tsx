@@ -84,12 +84,12 @@ export default function GuidePage() {
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="old-rows">
         <h2 id="old-rows" className="text-2xl font-bold text-slate-950">Why old rows are flagged</h2>
         <p className="mt-3 leading-7 text-slate-700">
-          The checker uses different age windows by workflow. Click-ID upload rows are reviewed against a 90-day offline conversion window, while user-data / enhanced-conversion preflight rows are reviewed more conservatively against a 63-day window. Treat these as local review signals, then confirm final eligibility in Google Ads.
+          The checker uses different age windows by workflow. Click-ID upload rows are reviewed against a 90-day offline conversion window, while user-data / enhanced-conversion preflight rows are reviewed against a 63-day window. Treat these as local review signals, then confirm final eligibility in Google Ads.
         </p>
       </section>
 
       <LocalValidationBoundary />
-      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsDataManager, officialSources.googleAdsApiOffline]} />
+      <OfficialSources sources={[officialSources.googleAdsFileImport, officialSources.googleAdsImportGuidelines, officialSources.googleAdsDataManager, officialSources.googleAdsApiOffline]} />
 
       <div className="mt-10 rounded-3xl border border-blue-200 bg-blue-50 p-6">
         <h2 className="text-2xl font-bold text-slate-950">Check your CSV before upload</h2>
