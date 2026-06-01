@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { AdSenseAutoAds } from "@/components/AdSenseAutoAds";
 import { defaultDescription, defaultTitle, siteName, siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -36,32 +37,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         {children}
         <Analytics />
-        <DeferredAdsenseScript />
+        <AdSenseAutoAds />
       </body>
     </html>
   );
-}
-
-function DeferredAdsenseScript() {
-  const script = `
-(function () {
-  var loaded = false;
-  function loadAdsense() {
-    if (loaded || document.querySelector('script[data-ads-csv-adsense="true"]')) return;
-    loaded = true;
-    var script = document.createElement('script');
-    script.async = true;
-    script.crossOrigin = 'anonymous';
-    script.dataset.adsCsvAdsense = 'true';
-    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}';
-    document.head.appendChild(script);
-  }
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(loadAdsense, { timeout: 5000 });
-  } else {
-    window.setTimeout(loadAdsense, 3500);
-  }
-})();`;
-
-  return <script dangerouslySetInnerHTML={{ __html: script }} />;
 }
