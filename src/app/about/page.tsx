@@ -12,7 +12,7 @@ export default function AboutPage() {
       <a href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">← Back to checker</a>
       <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-950">About this checker</h1>
       <p className="mt-5 text-lg leading-8 text-slate-700">
-        Google Ads Offline Conversion CSV Checker is an independent browser-local preflight tool for advertisers, PPC operators, agencies, and local service teams that upload offline conversion data to Google Ads.
+        Google Ads Offline Conversion CSV Checker is an independent YmirTool browser-local preflight tool for advertisers, PPC operators, agencies, and local service teams that upload offline conversion data to Google Ads.
       </p>
       <p className="mt-3 text-sm leading-6 text-slate-600">
         It is not an official Google product and is not affiliated with Google.

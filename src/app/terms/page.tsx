@@ -15,7 +15,7 @@ export default function TermsPage() {
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-950">Use at your own discretion</h2>
         <p className="mt-3 leading-7 text-slate-700">
-          This tool is provided as a local preflight checker to help identify common CSV formatting and data quality risks before uploading offline conversions to Google Ads. It is not an official Google product and does not guarantee that an upload will be accepted or attributed.
+          This YmirTool tool is provided as a local preflight checker to help identify common CSV formatting and data quality risks before uploading offline conversions to Google Ads. It is not an official Google product and does not guarantee that an upload will be accepted or attributed.
         </p>
       </section>
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

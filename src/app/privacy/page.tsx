@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-950">Local file processing</h2>
         <p className="mt-3 leading-7 text-slate-700">
-          CSV files are processed locally in your browser. The checker does not upload your CSV file to our server and does not store row-level conversion data, click IDs, email addresses, phone numbers, order IDs, or conversion values.
+          YmirTool designed this checker so CSV files are processed locally in your browser. The checker does not upload your CSV file to our server and does not store row-level conversion data, click IDs, email addresses, phone numbers, order IDs, or conversion values.
         </p>
       </section>
       <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -16,7 +16,7 @@ export default function DisclaimerPage() {
       <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-bold text-slate-950">CSV-level checks only</h2>
         <p className="mt-3 leading-7 text-slate-700">
-          This checker helps identify common CSV formatting and data quality issues before Google Ads upload. It is not affiliated with Google and does not verify account settings, conversion action ownership, click ownership, policy status, customer data terms, import preview results, or attribution.
+          This YmirTool checker helps identify common CSV formatting and data quality issues before Google Ads upload. It is not affiliated with Google and does not verify account settings, conversion action ownership, click ownership, policy status, customer data terms, import preview results, or attribution.
         </p>
       </section>
 
