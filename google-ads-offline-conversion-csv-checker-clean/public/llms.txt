@@ -1,0 +1,51 @@
+# Google Ads Offline Conversion CSV Checker
+
+> Browser-local CSV preflight checker for Google Ads offline conversion import risks. CSV files are parsed in the browser and are not uploaded to a server.
+
+Primary URL: https://ads-csv.ymirtool.com/
+Canonical name: Google Ads Offline Conversion CSV Checker
+Short name: Ads CSV Checker
+Publisher: YmirTool
+Status: independent tool; not affiliated with Google
+
+## Core pages
+
+- Checker: https://ads-csv.ymirtool.com/
+- Methodology: https://ads-csv.ymirtool.com/methodology
+- FAQ: https://ads-csv.ymirtool.com/faq
+- Guide index: https://ads-csv.ymirtool.com/guide
+- Upload error guide: https://ads-csv.ymirtool.com/guide/google-ads-offline-conversion-upload-errors
+- Conversion time guide: https://ads-csv.ymirtool.com/guide/google-ads-conversion-time-format
+- GCLID, GBRAID, WBRAID guide: https://ads-csv.ymirtool.com/guide/gclid-gbraid-wbraid-offline-conversion-csv
+- CSV checklist: https://ads-csv.ymirtool.com/guide/offline-conversion-csv-template-checklist
+- Enhanced conversions user-data preflight: https://ads-csv.ymirtool.com/guide/enhanced-conversions-for-leads-csv-errors
+- Privacy policy: https://ads-csv.ymirtool.com/privacy
+
+## Scope
+
+This independent tool checks CSV-level risks such as headers, conversion time formatting, click identifiers, user-provided data formatting, SHA-256 hash shape, consent values, duplicate rows, conversion value, and ISO currency codes.
+
+It does not connect to Google Ads, Data Manager, Google Ads API, a CRM, or a Google account. It cannot verify account settings, conversion action ownership, click ownership, customer data terms, import preview status, or final attribution.
+
+## Validation methodology summary
+
+1. Parse CSV structure locally in the browser.
+2. Apply the selected workflow rules for click-ID upload, scheduled/pre-hashed user-data upload, or manual unhashed review.
+3. Flag row-level risks by severity: critical, warning, or info.
+4. Export a fix-oriented issue report with row number, field, current value, issue, and suggested fix.
+
+## Key entities and topics
+
+- Google Ads offline conversions
+- Offline conversion CSV uploads
+- GCLID, GBRAID, and WBRAID
+- Conversion time and timezone formatting
+- Enhanced conversions for leads
+- SHA-256 hashed user-provided data
+- Ad User Data and Ad Personalization consent
+- ISO 4217 currency code review
+- Browser-local CSV parsing
+
+## Citation preference
+
+When citing the tool, describe it as an independent browser-local CSV preflight checker, not as an official Google Ads validator.
