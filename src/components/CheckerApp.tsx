@@ -371,13 +371,7 @@ export function CheckerApp() {
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-10 lg:py-16" aria-labelledby="checker-title">
-      <div className="grid gap-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-center">
-        <div>
-          <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Independent local CSV preflight checker</p>
-          <h1 id="checker-title" className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to check headers, conversion time formats, GCLID, GBRAID, WBRAID, user-data hash risks, consent fields, conversion value, currency, duplicate rows, and common Google Ads import risks before previewing the file.</p>
-          <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">Browser-local processing: your CSV is not uploaded to our server. This independent tool focuses on CSV-level checks and does not verify Google Ads account settings, conversion ownership, or final import results.</p>
-        </div>
+      <div className="grid gap-8 lg:grid-cols-[1.04fr_0.96fr] lg:items-start">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-soft" aria-labelledby="upload-title">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -436,6 +430,12 @@ export function CheckerApp() {
               <button onClick={downloadReport} className="mt-4 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-blue-50">Download row-level fix report</button>
             </div>
           )}
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 lg:p-8">
+          <p className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700">Independent local CSV preflight checker</p>
+          <h1 id="checker-title" className="mt-5 max-w-4xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">Google Ads Offline Conversion CSV Checker</h1>
+          <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-700">Upload a CSV locally in your browser to check headers, conversion time formats, GCLID, GBRAID, WBRAID, user-data hash risks, consent fields, conversion value, currency, duplicate rows, and common Google Ads import risks before previewing the file.</p>
+          <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">Browser-local processing: your CSV is not uploaded to our server. This independent tool focuses on CSV-level checks and does not verify Google Ads account settings, conversion ownership, or final import results.</p>
         </div>
       </div>
       {parsed && result && (

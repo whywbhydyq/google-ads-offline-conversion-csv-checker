@@ -36,10 +36,6 @@ const faqs = [
     question: "What file types are supported?",
     answer: "The MVP supports UTF-8 CSV files with a header row, comma delimiter, and a 10MB browser-side file limit. Google Ads supports additional template formats, but XLSX files and Google Sheets URLs are not supported in this checker.",
   },
-  {
-    question: "Should I create new long-tail pages for every upload problem?",
-    answer: "No. New URLs should wait for Search Console or Bing Webmaster Tools evidence that a distinct query has repeated impressions and cannot be served by the existing checker or guide pages.",
-  },
 ];
 
 const faqJsonLd = [

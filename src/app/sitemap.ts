@@ -1,38 +1,29 @@
-import type { MetadataRoute } from "next";
-import { contentDateModified, siteUrl } from "@/lib/site";
+import type { MetadataRoute } from 'next';
+import { contentDateModified, siteUrl } from '@/lib/site';
 
 type SitemapRoute = {
   path: string;
-  changeFrequency: "weekly" | "monthly" | "yearly";
+  changeFrequency: 'weekly' | 'monthly';
   priority: number;
-  lastModified: string;
 };
 
 const routes: SitemapRoute[] = [
-  { path: "", changeFrequency: "weekly", priority: 1, lastModified: contentDateModified },
-  { path: "/faq", changeFrequency: "monthly", priority: 0.7, lastModified: contentDateModified },
-  { path: "/methodology", changeFrequency: "monthly", priority: 0.72, lastModified: contentDateModified },
-  { path: "/about", changeFrequency: "monthly", priority: 0.6, lastModified: "2026-05-24" },
-  { path: "/privacy", changeFrequency: "yearly", priority: 0.5, lastModified: contentDateModified },
-  { path: "/terms", changeFrequency: "yearly", priority: 0.5, lastModified: "2026-05-22" },
-  { path: "/disclaimer", changeFrequency: "yearly", priority: 0.5, lastModified: "2026-05-24" },
-  { path: "/contact", changeFrequency: "yearly", priority: 0.5, lastModified: "2026-05-24" },
-  { path: "/guide", changeFrequency: "monthly", priority: 0.8, lastModified: contentDateModified },
-  { path: "/guide/google-ads-offline-conversion-upload-errors", changeFrequency: "monthly", priority: 0.85, lastModified: contentDateModified },
-  { path: "/guide/google-ads-conversion-time-format", changeFrequency: "monthly", priority: 0.82, lastModified: contentDateModified },
-  { path: "/guide/gclid-gbraid-wbraid-offline-conversion-csv", changeFrequency: "monthly", priority: 0.82, lastModified: contentDateModified },
-  { path: "/guide/offline-conversion-csv-template-checklist", changeFrequency: "monthly", priority: 0.75, lastModified: contentDateModified },
-  { path: "/guide/enhanced-conversions-for-leads-csv-errors", changeFrequency: "monthly", priority: 0.75, lastModified: contentDateModified },
+  { path: '', changeFrequency: 'weekly', priority: 1 },
+  { path: '/faq', changeFrequency: 'monthly', priority: 0.7 },
+  { path: '/methodology', changeFrequency: 'monthly', priority: 0.72 },
+  { path: '/guide', changeFrequency: 'monthly', priority: 0.8 },
+  { path: '/guide/google-ads-offline-conversion-upload-errors', changeFrequency: 'monthly', priority: 0.85 },
+  { path: '/guide/google-ads-conversion-time-format', changeFrequency: 'monthly', priority: 0.82 },
+  { path: '/guide/gclid-gbraid-wbraid-offline-conversion-csv', changeFrequency: 'monthly', priority: 0.82 },
+  { path: '/guide/offline-conversion-csv-template-checklist', changeFrequency: 'monthly', priority: 0.75 },
+  { path: '/guide/enhanced-conversions-for-leads-csv-errors', changeFrequency: 'monthly', priority: 0.75 },
 ];
 
-function toUtcDate(date: string) {
-  return new Date(`${date}T00:00:00.000Z`);
-}
-
 export default function sitemap(): MetadataRoute.Sitemap {
+  const lastModified = new Date(`${contentDateModified}T00:00:00.000Z`);
   return routes.map((route) => ({
     url: `${siteUrl}${route.path}`,
-    lastModified: toUtcDate(route.lastModified),
+    lastModified,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }));

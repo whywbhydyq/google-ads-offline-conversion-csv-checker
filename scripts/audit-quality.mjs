@@ -1,0 +1,13 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+const root=process.cwd();const read=(p)=>readFileSync(join(root,p),'utf8');const failures=[];
+const checker=read('src/components/CheckerApp.tsx');
+const uploadAt=checker.indexOf('aria-labelledby="upload-title"');
+const headlineAt=checker.indexOf('id="checker-title"');
+if(uploadAt<0||headlineAt<0||uploadAt>headlineAt)failures.push('Upload workspace must precede explanatory homepage copy in DOM order');
+const ads=read('src/components/AdSenseAutoAds.tsx');if(!ads.includes('isAdsenseAllowedPath'))failures.push('AdSense must use the explicit route policy');
+const policy=read('src/lib/publicPolicy.ts');if(!policy.includes("new Set(['/'])"))failures.push('Only the homepage should be eligible for automatic ads');
+const faq=read('src/app/faq/page.tsx');if(faq.includes('Search Console')||faq.includes('long-tail pages'))failures.push('Public FAQ contains internal SEO governance copy');
+const sitemap=read('src/app/sitemap.ts');for(const path of ['/privacy','/terms','/contact','/about','/disclaimer'])if(sitemap.includes(`path: '${path}'`))failures.push(`Sitemap should focus on substantive content, not ${path}`);
+for(const path of ['/guide','/methodology','/faq'])if(!sitemap.includes(`path: '${path}'`))failures.push(`Sitemap missing ${path}`);
+if(failures.length){console.error(failures.join('\n'));process.exit(1)}console.log('Ads CSV quality audit passed');
